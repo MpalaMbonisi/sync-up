@@ -10,8 +10,8 @@ import lombok.*;
 @Table(name = "account")
 @Setter
 @Getter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class User {
 
     @Id

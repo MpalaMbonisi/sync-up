@@ -6,10 +6,8 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
-@RequiredArgsConstructor
 public class TaskList {
 
     @Id
