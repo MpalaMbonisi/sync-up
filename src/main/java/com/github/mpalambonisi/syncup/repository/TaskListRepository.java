@@ -1,2 +1,4 @@
-package com.github.mpalambonisi.syncup.repository;public class TaskListRepository {
+package com.github.mpalambonisi.syncup.repository;
+
+public class TaskListRepository {
 }

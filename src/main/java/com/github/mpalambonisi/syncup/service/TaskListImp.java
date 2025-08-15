@@ -1,2 +1,7 @@
-package com.github.mpalambonisi.syncup.service;public class TaskListImp {
+package com.github.mpalambonisi.syncup.service;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class TaskListImp implements TaskListService{
 }

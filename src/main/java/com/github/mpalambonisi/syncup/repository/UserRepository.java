@@ -1,2 +1,4 @@
-package com.github.mpalambonisi.syncup.repository;public class UserRepository {
+package com.github.mpalambonisi.syncup.repository;
+
+public class UserRepository {
 }

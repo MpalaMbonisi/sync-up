@@ -1,2 +1,4 @@
-package com.github.mpalambonisi.syncup.service;public class TaskListService {
+package com.github.mpalambonisi.syncup.service;
+
+public interface TaskListService {
 }

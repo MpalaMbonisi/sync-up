@@ -1,2 +1,7 @@
-package com.github.mpalambonisi.syncup.controller;public class TaskListController {
+package com.github.mpalambonisi.syncup.controller;
+
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class TaskListController {
 }
