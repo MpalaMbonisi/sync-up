@@ -1,4 +1,20 @@
 package com.github.mpalambonisi.syncup.service;
 
+import com.github.mpalambonisi.syncup.dto.AddCollaboratorsRequestDTO;
+import com.github.mpalambonisi.syncup.dto.RemoveCollaboratorRequestDTO;
+import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
+import com.github.mpalambonisi.syncup.model.TaskList;
+import com.github.mpalambonisi.syncup.model.User;
+
+import java.util.List;
+
 public interface TaskListService {
+
+    List<TaskList> getAllListForCurrentUser(User user);
+    TaskList saveTaskList(User user, TaskListCreateDTO dto);
+    TaskList getListById(Long id, User user);
+    void removeListById(Long id, User user);
+    List<String> addCollaborators(Long id, AddCollaboratorsRequestDTO dto, User user);
+    void removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user);
+    List<String> getAllCollaborators(Long id, User user);
 }
