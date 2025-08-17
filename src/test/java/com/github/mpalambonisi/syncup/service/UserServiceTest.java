@@ -32,7 +32,7 @@ public class UserServiceTest {
                 .lastName("Mpala")
                 .username("mbonisimpala")
                 .email("mbonisimpala63@gmail.com")
-                .password("mbonisimpala41")
+                .password("mbonisimpala00")
                 .build();
         // pretend the username does not exist in the database
         when(userRepository.existsByUsername("mbonisimpala")).thenReturn(false);
