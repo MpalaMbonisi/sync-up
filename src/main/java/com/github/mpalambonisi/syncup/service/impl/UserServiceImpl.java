@@ -5,24 +5,28 @@ import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 import com.github.mpalambonisi.syncup.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    UserRepository userRepository;
+    private UserRepository userRepository;
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public User registerUser(UserRegistrationDTO dto) {
+
         // check if user exists in the database
-        if (userRepository.existsByUsername(dto.getUsername())){
+        if(userRepository.findByUsername(dto.getUsername()).isPresent()){
             throw new IllegalStateException("Username already in use.");
         }
-        // encode password
 
         User newUser = new User(dto.getUsername(), dto.getFirstName(),
-                dto.getLastName(), dto.getEmail(), dto.getPassword());
+                dto.getLastName(), dto.getEmail(),
+                passwordEncoder.encode(dto.getPassword())); // store encoded password
 
         return userRepository.save(newUser);
     }
