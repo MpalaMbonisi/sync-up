@@ -1,8 +1,9 @@
-package com.github.mpalambonisi.syncup.service;
+package com.github.mpalambonisi.syncup.service.impl;
 
 import com.github.mpalambonisi.syncup.dto.UserRegistrationDTO;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
+import com.github.mpalambonisi.syncup.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceImp implements UserService{
+public class UserServiceImp implements UserService {
 
     UserRepository userRepository;
 

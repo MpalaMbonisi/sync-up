@@ -1,16 +1,17 @@
-package com.github.mpalambonisi.syncup.service;
+package com.github.mpalambonisi.syncup.service.impl;
 
 import com.github.mpalambonisi.syncup.dto.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.dto.RemoveCollaboratorRequestDTO;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
+import com.github.mpalambonisi.syncup.service.TaskListService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class TaskListServiceImp implements TaskListService{
+public class TaskListServiceImp implements TaskListService {
     @Override
     public List<TaskList> getAllListForCurrentUser(User user) {
         return null;
