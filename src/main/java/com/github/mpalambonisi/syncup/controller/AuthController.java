@@ -1,7 +1,7 @@
 package com.github.mpalambonisi.syncup.controller;
 
-import com.github.mpalambonisi.syncup.dto.AuthRequestDTO;
-import com.github.mpalambonisi.syncup.dto.AuthResponseDto;
+import com.github.mpalambonisi.syncup.dto.request.AuthRequestDTO;
+import com.github.mpalambonisi.syncup.dto.response.AuthResponseDto;
 import com.github.mpalambonisi.syncup.dto.UserRegistrationDTO;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 import com.github.mpalambonisi.syncup.service.JwtService;

@@ -1,14 +1,13 @@
 package com.github.mpalambonisi.syncup.controller;
 
-import com.github.mpalambonisi.syncup.dto.AddCollaboratorsRequestDTO;
-import com.github.mpalambonisi.syncup.dto.RemoveCollaboratorRequestDTO;
+import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
+import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
