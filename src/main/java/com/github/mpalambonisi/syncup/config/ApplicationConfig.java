@@ -1,2 +1,4 @@
-package com.github.mpalambonisi.syncup.config;public class ApplicationConfig {
+package com.github.mpalambonisi.syncup.config;
+
+public class ApplicationConfig {
 }

@@ -1,4 +1,4 @@
-package com.github.mpalambonisi.syncup.security;
+package com.github.mpalambonisi.syncup.config;
 
 public class JwtAuthenticationFilter {
 }
