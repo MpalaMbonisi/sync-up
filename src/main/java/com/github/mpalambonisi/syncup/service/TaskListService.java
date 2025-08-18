@@ -5,7 +5,6 @@ import com.github.mpalambonisi.syncup.dto.RemoveCollaboratorRequestDTO;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
-
 import java.util.List;
 
 public interface TaskListService {

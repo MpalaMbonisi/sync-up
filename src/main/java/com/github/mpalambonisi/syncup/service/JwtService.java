@@ -1,6 +1,5 @@
 package com.github.mpalambonisi.syncup.service;
 
-import com.github.mpalambonisi.syncup.model.User;
 import io.jsonwebtoken.Claims;
 import org.springframework.security.core.userdetails.UserDetails;
 
