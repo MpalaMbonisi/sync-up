@@ -1,13 +1,17 @@
-package com.github.mpalambonisi.syncup.dto;
+package com.github.mpalambonisi.syncup.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class AuthRequestDTO {
 
     @NotEmpty(message = "Username cannot be empty.")
