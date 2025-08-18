@@ -1,14 +1,13 @@
 package com.github.mpalambonisi.syncup.service.impl;
 
-import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
@@ -24,7 +23,7 @@ public class JwtServiceImpl implements JwtService {
     private long jwtExpiration;
 
     @Override
-    public String generateToken(User user) {
+    public String generateToken(UserDetails user) {
         return generateToken(new HashMap<>(), user);
     }
 
@@ -34,9 +33,9 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public boolean isTokenValid(String token, User user) {
+    public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(user.getUsername())) && !isTokenExpired(token);
+        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
     @Override
@@ -54,11 +53,11 @@ public class JwtServiceImpl implements JwtService {
                 .getPayload();
     }
 
-    private String generateToken(Map<String, Object> extractClaims, User user){
+    private String generateToken(Map<String, Object> extractClaims, UserDetails userDetails){
         long now = System.currentTimeMillis();
         return Jwts.builder()
                 .claims(extractClaims)
-                .subject(user.getUsername())
+                .subject(userDetails.getUsername())
                 .issuedAt(new Date(now))
                 .expiration(new Date(now + jwtExpiration))
                 .signWith(getSignInKey())

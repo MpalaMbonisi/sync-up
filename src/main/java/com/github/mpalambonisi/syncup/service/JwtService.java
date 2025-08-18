@@ -2,11 +2,13 @@ package com.github.mpalambonisi.syncup.service;
 
 import com.github.mpalambonisi.syncup.model.User;
 import io.jsonwebtoken.Claims;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.util.function.Function;
 
 public interface JwtService {
-    String generateToken(User user);
+    String generateToken(UserDetails user);
     String extractUsername(String token);
-    boolean isTokenValid(String token, User user);
+    boolean isTokenValid(String token, UserDetails user);
     <T> T extractClaim(String token, Function<Claims, T> claimResolver);
 }
