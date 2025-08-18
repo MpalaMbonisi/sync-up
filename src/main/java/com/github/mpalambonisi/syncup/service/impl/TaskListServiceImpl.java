@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class TaskListServiceImp implements TaskListService {
+public class TaskListServiceImpl implements TaskListService {
     @Override
     public List<TaskList> getAllListForCurrentUser(User user) {
         return null;

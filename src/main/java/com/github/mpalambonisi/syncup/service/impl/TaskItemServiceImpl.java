@@ -8,7 +8,7 @@ import com.github.mpalambonisi.syncup.service.TaskItemService;
 import org.springframework.stereotype.Service;
 
 @Service
-public class TaskItemServiceImp implements TaskItemService {
+public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem saveTask(String listId, TaskItemCreateDTO dto, User user) {
