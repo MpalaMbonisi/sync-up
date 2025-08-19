@@ -1,6 +1,7 @@
 package com.github.mpalambonisi.syncup.service;
 
 import com.github.mpalambonisi.syncup.dto.UserRegistrationDTO;
+import com.github.mpalambonisi.syncup.exception.UsernameExistsException;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 import com.github.mpalambonisi.syncup.service.impl.UserServiceImpl;
@@ -73,7 +74,7 @@ public class UserServiceTest {
         when(userRepository.findByUsername("mbonisimpala")).thenReturn(Optional.of(new User()));
 
         // Act & Assert
-        Assertions.assertThrows(IllegalStateException.class, () -> {
+        Assertions.assertThrows(UsernameExistsException.class, () -> {
             userService.registerUser(registrationDTO);
         }, "Username already in use.");
 
