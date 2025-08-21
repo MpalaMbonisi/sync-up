@@ -6,6 +6,7 @@ import com.github.mpalambonisi.syncup.dto.UserRegistrationDTO;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 import com.github.mpalambonisi.syncup.service.JwtService;
 import com.github.mpalambonisi.syncup.service.impl.UserServiceImpl;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,13 +29,13 @@ public class AuthController {
     private final UserServiceImpl userService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody UserRegistrationDTO dto){
+    public ResponseEntity<String> registerUser(@Valid @RequestBody UserRegistrationDTO dto){
         userService.registerUser(dto);
         return new ResponseEntity<>("User registered successfully!", HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> authenticateUser(@RequestBody AuthRequestDTO dto){
+    public ResponseEntity<AuthResponseDto> authenticateUser(@Valid @RequestBody AuthRequestDTO dto){
         // 1. Authenticate the user using the AuthenticationManager
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
