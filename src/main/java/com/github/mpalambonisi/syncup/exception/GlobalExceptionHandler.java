@@ -24,8 +24,8 @@ import java.util.List;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({UsernameNotFoundException.class})
-    public ResponseEntity<Object> handleResourceNotFoundException(RuntimeException e){
-        ErrorResponse error = new ErrorResponse(Collections.singletonList(e.getMessage()));
+    public ResponseEntity<Object> handleResourceNotFoundException(RuntimeException ex){
+        ErrorResponse error = new ErrorResponse(Collections.singletonList(ex.getMessage()));
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
@@ -35,15 +35,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(TitleAlreadyExistsException.class)
+    public ResponseEntity<Object> handleTitleAlreadyExistsException(TitleAlreadyExistsException ex){
+        ErrorResponse error = new ErrorResponse(List.of(ex.getMessage()));
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(EmptyResultDataAccessException.class)
-    public ResponseEntity<Object> handleDataAccessException(EmptyResultDataAccessException e){
+    public ResponseEntity<Object> handleDataAccessException(){
         ErrorResponse error = new ErrorResponse(List.of("Cannot delete non-existing resource."));
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException e){
+    public ResponseEntity<Object> handleDataIntegrityViolationException(){
         ErrorResponse error = new ErrorResponse(List.of("Data Integrity Violation: we cannot process your request."));
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
