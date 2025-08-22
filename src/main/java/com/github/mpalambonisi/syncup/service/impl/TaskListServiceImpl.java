@@ -28,7 +28,7 @@ public class TaskListServiceImpl implements TaskListService {
     public TaskList saveTaskList(User user, TaskListCreateDTO dto) {
 
         if(taskListRepository.findByTitle(dto.getTitle()).isPresent()){
-            throw new TitleAlreadyExistsException("Title is already be used!");
+            throw new TitleAlreadyExistsException("Title is already being used!");
         }
 
         TaskList taskList = new TaskList();
