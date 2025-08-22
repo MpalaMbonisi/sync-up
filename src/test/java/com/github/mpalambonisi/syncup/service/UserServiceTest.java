@@ -30,19 +30,19 @@ public class UserServiceTest {
     private UserServiceImpl userService;
 
     @Test
-    void registerNewUser_whenEmailIsNew_shouldCreateAndReturnUser(){
+    void registerNewUser_withNewUsername_shouldSaveAndReturnUser(){
         // Arrange
         UserRegistrationDTO registrationDTO = UserRegistrationDTO.builder()
                 .firstName("Mbonisi")
                 .lastName("Mpala")
                 .username("mbonisimpala")
-                .email("mbonisimpala63@gmail.com")
-                .password("mbonisimpala00")
+                .email("mbonisim123@gmail.com")
+                .password("StrongPassword1234")
                 .build();
         // pretend the username does not exist in the database
         when(userRepository.findByUsername("mbonisimpala")).thenReturn(Optional.empty());
         // encode password
-        when(passwordEncoder.encode("mbonisimpala00")).thenReturn("hashedPassword");
+        when(passwordEncoder.encode("StrongPassword1234")).thenReturn("hashedPassword");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 
@@ -57,18 +57,18 @@ public class UserServiceTest {
 
         // Verify
         verify(userRepository, times(1)).save(any(User.class));
-        verify(passwordEncoder, times(1)).encode("mbonisimpala00");
+        verify(passwordEncoder, times(1)).encode("StrongPassword1234");
     }
 
     @Test
-    void registerNewUser_whenEmailAlreadyExists_shouldThrowException(){
+    void registerNewUser_withExistingUsername_shouldThrowUsernameExistsException(){
         // Arrange
         UserRegistrationDTO registrationDTO = UserRegistrationDTO.builder()
                 .firstName("Mbonisi")
                 .lastName("Mpala")
                 .username("mbonisimpala")
-                .email("mbonisimpala63@gmail.com")
-                .password("mbonisimpala41")
+                .email("mbonisim123@gmail.com")
+                .password("StrongPassword1234")
                 .build();
         // pretend the username does exist in the database
         when(userRepository.findByUsername("mbonisimpala")).thenReturn(Optional.of(new User()));
@@ -81,6 +81,40 @@ public class UserServiceTest {
         // Verify
         verify(userRepository, never()).save(any());
         verify(passwordEncoder, never()).encode(anyString());
+    }
+    
+    @Test
+    void registerUser_withUnsanitisedData_shouldNormaliseAndSaveUser(){
+        // Arrange
+        UserRegistrationDTO registrationDTO = UserRegistrationDTO.builder()
+                .firstName("MBONISI") // dirty data
+                .lastName("mPaLa") 
+                .username("mboNisiMPALA") 
+                .email("mBONISIm123@gmaIL.COM")
+                .password("StrongPassword1234") // except for the password
+                .build();
+        // pretend the username does not exist in the database
+        when(userRepository.findByUsername("mbonisimpala")).thenReturn(Optional.empty());
+        // encode password
+        when(passwordEncoder.encode("StrongPassword1234")).thenReturn("hashedPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+
+        // Act
+        User savedUser = userService.registerUser(registrationDTO);
+
+        // Assert
+        assertThat(savedUser).isNotNull();
+        assertThat(savedUser.getEmail()).isEqualTo("mbonisim123@gmail.com");
+        assertThat(savedUser.getUsername()).isEqualTo("mbonisimpala");
+        assertThat(savedUser.getFirstName()).isEqualTo("Mbonisi");
+        assertThat(savedUser.getLastName()).isEqualTo("Mpala");
+        assertThat(savedUser.getPassword()).isEqualTo("hashedPassword");
+
+        // Verify
+        verify(userRepository, times(1)).save(any(User.class));
+        verify(passwordEncoder, times(1)).encode("StrongPassword1234");
+        
     }
 
 }
