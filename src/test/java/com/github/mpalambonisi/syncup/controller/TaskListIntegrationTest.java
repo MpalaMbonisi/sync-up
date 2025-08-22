@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -65,24 +66,18 @@ public class TaskListIntegrationTest {
                 "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
-        // 2. Manually set the authentication context
-        UsernamePasswordAuthenticationToken authToken =
-                new UsernamePasswordAuthenticationToken(ownerUser, null, ownerUser.getAuthorities());
-
-        // Place this real Authentication object into the security context
-        SecurityContextHolder.getContext().setAuthentication(authToken);
-
         TaskListCreateDTO dto = TaskListCreateDTO.builder()
                 .title("Grocery Shopping List")
                 .build();
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.post("/list/create")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title").value(dto.getTitle()))
-                .andExpect(jsonPath("$.owner").value("mbonisimpala"));
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                        .andExpect(status().isCreated())
+                        .andExpect(jsonPath("$.title").value(dto.getTitle()))
+                        .andExpect(jsonPath("$.owner").value("mbonisimpala"));
 
         // Post-Action Verification
         Optional<TaskList> savedList = taskListRepository.findByTitle(dto.getTitle());
@@ -109,5 +104,35 @@ public class TaskListIntegrationTest {
         // Post-Action Verification
         Optional<TaskList> savedList = taskListRepository.findByTitle(dto.getTitle());
         assertThat(savedList).isEmpty();
+    }
+
+    @Test
+    void createList_withDuplicateTitle_shouldReturn409Conflict() throws Exception{
+        // Arrange
+        String title = "Grocery Shopping List";
+        // 1. Create a user with a real encoded password and save them to the database
+        User ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+                "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
+        userRepository.save(ownerUser);
+
+        // Create Task-list and save it to the database
+        TaskList existingtaskList = new TaskList();
+        existingtaskList.setTitle(title);
+        existingtaskList.setOwner(ownerUser);
+        taskListRepository.save(existingtaskList);
+
+        TaskListCreateDTO dto = new TaskListCreateDTO(title);
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/create")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Title is already being used!"));
+
+        // Post-Action Verification
+        assertThat(taskListRepository.count()).isEqualTo(1);
+
     }
 }
