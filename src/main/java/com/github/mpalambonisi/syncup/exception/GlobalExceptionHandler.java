@@ -23,10 +23,16 @@ import java.util.List;
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler({UsernameNotFoundException.class, UsernameExistsException.class})
+    @ExceptionHandler({UsernameNotFoundException.class})
     public ResponseEntity<Object> handleResourceNotFoundException(RuntimeException e){
         ErrorResponse error = new ErrorResponse(Collections.singletonList(e.getMessage()));
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(UsernameExistsException.class)
+    public ResponseEntity<Object> handleUsernameExistsException(UsernameExistsException ex){
+        ErrorResponse error = new ErrorResponse(List.of(ex.getMessage()));
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(EmptyResultDataAccessException.class)
@@ -34,6 +40,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorResponse error = new ErrorResponse(List.of("Cannot delete non-existing resource."));
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
+
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException e){
