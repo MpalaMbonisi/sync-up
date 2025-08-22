@@ -1,2 +1,24 @@
-package com.github.mpalambonisi.syncup.dto.response;public class TaskListResponseDTO {
+package com.github.mpalambonisi.syncup.dto.response;
+
+import com.github.mpalambonisi.syncup.model.TaskItem;
+import jakarta.persistence.SecondaryTable;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+import java.util.Set;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class TaskListResponseDTO {
+
+    private String title;
+    private String owner;
+    private Set<String> collaborators;
+    private List<TaskItem> tasks;
+
 }
