@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -20,15 +22,31 @@ public class UserServiceImpl implements UserService {
     public User registerUser(UserRegistrationDTO dto) {
 
         // check if user exists in the database
-        if(userRepository.findByUsername(dto.getUsername()).isPresent()){
+        String username = dto.getUsername().toLowerCase().trim();
+        if(userRepository.findByUsername(username).isPresent()){
             throw new UsernameExistsException("Username already in use.");
         }
 
-        User newUser = new User(dto.getUsername(), dto.getFirstName(),
-                dto.getLastName(), dto.getEmail(),
-                passwordEncoder.encode(dto.getPassword())); // store encoded password
-
-        return userRepository.save(newUser);
+        return userRepository.save(createUserFromDTO(dto));
     }
 
+    private User createUserFromDTO(UserRegistrationDTO dto){
+
+        return new User(
+                dto.getUsername().toLowerCase().trim(),
+                capitalise(dto.getFirstName()),
+                capitalise(dto.getLastName()),
+                dto.getEmail().toLowerCase().trim(),
+                passwordEncoder.encode(dto.getPassword()));
+    }
+
+    private String capitalise(String word) {
+        if(word == null || word.isEmpty()) return word;
+
+        String trimmedWord = word.trim();
+
+        if(trimmedWord.length() == 1) return trimmedWord.toUpperCase();
+
+        return trimmedWord.substring(0,1).toUpperCase() + trimmedWord.substring(1).toLowerCase();
+    }
 }
