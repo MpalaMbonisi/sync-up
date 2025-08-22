@@ -3,15 +3,22 @@ package com.github.mpalambonisi.syncup.service.impl;
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
+import com.github.mpalambonisi.syncup.exception.TitleAlreadyExistsException;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
+import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.service.TaskListService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class TaskListServiceImpl implements TaskListService {
+
+    private final TaskListRepository taskListRepository;
+
     @Override
     public List<TaskList> getAllListForCurrentUser(User user) {
         return null;
@@ -19,7 +26,16 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public TaskList saveTaskList(User user, TaskListCreateDTO dto) {
-        return null;
+
+        if(taskListRepository.findByTitle(dto.getTitle()).isPresent()){
+            throw new TitleAlreadyExistsException("Title is already be used!");
+        }
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle(dto.getTitle().trim());
+        taskList.setOwner(user);
+
+        return taskListRepository.save(taskList);
     }
 
     @Override
