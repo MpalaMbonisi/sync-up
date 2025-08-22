@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,8 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.core.IsIterableContaining.hasItems;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
 @Testcontainers
@@ -50,7 +51,7 @@ public class AuthIntegrationTest {
     }
 
     @Test
-    void shouldRegisterUserSuccessfully() throws Exception{
+    void register_WithValidDto_shouldReturn201Created() throws Exception{
         // Arrange
         UserRegistrationDTO dto = UserRegistrationDTO.builder()
                 .firstName("Mbonisi")
@@ -77,6 +78,60 @@ public class AuthIntegrationTest {
         assertThat(createdUser.getLastName()).isEqualTo("Mpala");
         assertThat(createdUser.getEmail()).isEqualTo("mpalambonisi@gmail.com");
         assertThat(createdUser.getPassword()).isNotEqualTo("StrongPassword123");
+    }
+
+    @Test
+    void register_withInvalidEmail_shouldReturn400BadRequest() throws Exception{
+        // Arrange
+        UserRegistrationDTO dto = UserRegistrationDTO.builder()
+                .firstName("Mbonisi")
+                .lastName("Mpala")
+                .email("invalidEmail") // invalid email format
+                .username("mbonisimpala")
+                .password("StrongPassword1234")
+                .build();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message", hasItems("Please provide a valid email address.")));
+
+        // Post-Action Verification
+        Optional<User> userOptional = userRepository.findByUsername("mbonisimpala");
+        assertThat(userOptional.isEmpty()).isTrue();
+
+    }
+
+    @Test
+    void register_withExistingUsername_shouldReturn409Conflict() throws Exception{
+        // Arrange
+        User existingUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+                "mbonisim12@gmail.com", "hashedPassword");
+        userRepository.save(existingUser);
+        long userCountBefore = userRepository.count();
+
+        UserRegistrationDTO dto = UserRegistrationDTO.builder()
+                .firstName("Mbonisi")
+                .lastName("Mpala")
+                .email("mbonisim12@gmail.com")
+                .username("mbonisimpala")
+                .password("StrongPassword1234")
+                .build();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Username already in use."));
+
+        // Post-Action Verification
+        long userCountAfter = userRepository.count();
+        assertThat(userCountBefore).isEqualTo(userCountAfter);
+
     }
 
 }
