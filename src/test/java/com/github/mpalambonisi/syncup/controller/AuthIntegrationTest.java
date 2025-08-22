@@ -268,7 +268,63 @@ public class AuthIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Access denied... Incorrect credentials!"));
+                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+
+        // Post-Action Verification
+        long userCountAfter = userRepository.count();
+        assertThat(userCountBefore).isEqualTo(userCountAfter);
+    }
+
+    @Test
+    void login_withEmptyFields_shouldReturn400BadRequest() throws Exception{
+        // Arrange
+        User existingUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+                "mbonisim12@gmail.com", passwordEncoder.encode("StrongPassword1234"));
+        userRepository.save(existingUser);
+        long userCountBefore = userRepository.count();
+
+        AuthRequestDTO dto = AuthRequestDTO.builder()
+                .username("")
+                .password("").build();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message", hasItems(
+                        "Username cannot be empty.",
+                        "Password cannot be empty."
+                )));
+
+        // Post-Action Verification
+        long userCountAfter = userRepository.count();
+        assertThat(userCountBefore).isEqualTo(userCountAfter);
+    }
+
+    @Test
+    void login_withBlankFields_shouldReturn400BadRequest() throws Exception{
+        // Arrange
+        User existingUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+                "mbonisim12@gmail.com", passwordEncoder.encode("StrongPassword1234"));
+        userRepository.save(existingUser);
+        long userCountBefore = userRepository.count();
+
+        AuthRequestDTO dto = AuthRequestDTO.builder()
+                .username("   ")
+                .password("   ").build();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message", hasItems(
+                        "Username cannot be blank.",
+                        "Password cannot be blank."
+                )));
 
         // Post-Action Verification
         long userCountAfter = userRepository.count();
