@@ -12,7 +12,9 @@ import java.util.Set;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "task_lists")
+@Table(name = "task_lists", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"owner_id", "title"})
+})
 public class TaskList {
 
     @Id
