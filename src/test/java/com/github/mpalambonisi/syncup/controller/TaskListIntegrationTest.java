@@ -23,10 +23,12 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -163,6 +165,45 @@ public class TaskListIntegrationTest {
         // Post-Action Verification
         Optional<TaskList> savedList = taskListRepository.findByTitle(dto.getTitle());
         assertThat(savedList).isEmpty();
+    }
+
+    @Test
+    void getAllLists_asAuthenticatedUser_shouldReturn200OkAndLists() throws Exception{
+        // Arrange
+        User ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+                "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
+        userRepository.save(ownerUser);
+
+        TaskList taskList01 = new TaskList();
+        taskList01.setOwner(ownerUser);
+        taskList01.setTitle("Grocery Shopping List");
+
+        TaskList taskList02 = new TaskList();
+        taskList02.setOwner(ownerUser);
+        taskList02.setTitle("Clothing Wishlist");
+
+        List<TaskList> savedList = List.of(taskList01, taskList02);
+        taskListRepository.saveAll(savedList);
+
+        // Assert & Act
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/all")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].title").value("Grocery Shopping List"))
+                .andExpect(jsonPath("$[0].owner").value(ownerUser.getUsername()))
+                .andExpect(jsonPath("$[1].title").value("Clothing Wishlist"))
+                .andExpect(jsonPath("$[0].owner").value(ownerUser.getUsername()));
+    }
+
+    @Test
+    void getAllLists_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
+        // Arrange (No test data needed, as the request should be blocked before it hits the controller)
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/all"))
+                .andExpect(status().isUnauthorized());
     }
 
 }
