@@ -8,6 +8,8 @@ import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -27,6 +30,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.core.IsIterableContaining.hasItems;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -135,4 +139,30 @@ public class TaskListIntegrationTest {
         assertThat(taskListRepository.count()).isEqualTo(1);
 
     }
+
+    @ParameterizedTest
+    @WithMockUser(username = "mbonisimpala")
+    @CsvSource({"'', 'Title cannot be empty.'", "'   ', 'Title cannot be blank.'"})
+    void createList_withBlankTitle_shouldReturn400BadRequest(String invalidTitle, String expectedErrorMessage) throws Exception{
+        // Arrange
+        // 1. Create a user with a real encoded password and save them to the database
+        User ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+                "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
+        userRepository.save(ownerUser);
+
+        TaskListCreateDTO dto = new TaskListCreateDTO(invalidTitle);
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message", hasItems(expectedErrorMessage)));
+
+        // Post-Action Verification
+        Optional<TaskList> savedList = taskListRepository.findByTitle(dto.getTitle());
+        assertThat(savedList).isEmpty();
+    }
+
 }
