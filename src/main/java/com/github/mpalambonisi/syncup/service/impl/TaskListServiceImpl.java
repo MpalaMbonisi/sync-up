@@ -20,7 +20,7 @@ public class TaskListServiceImpl implements TaskListService {
     private final TaskListRepository taskListRepository;
 
     @Override
-    public List<TaskList> getAllListForCurrentUser(User user) {
+    public List<TaskList> getAllListForOwner(User user) {
         return null;
     }
 

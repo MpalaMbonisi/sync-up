@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface TaskListService {
 
-    List<TaskList> getAllListForCurrentUser(User user);
+    List<TaskList> getAllListForOwner(User user);
     TaskList saveTaskList(User user, TaskListCreateDTO dto);
     TaskList getListById(Long id, User user);
     void removeListById(Long id, User user);
