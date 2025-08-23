@@ -153,4 +153,29 @@ public class TaskListServiceTest {
         verify(taskListRepo, times(1)).findById(id);
     }
 
+    @Test
+    void getListById_whenUserIsNotAuthorised_shouldThrowAccessDeniedException(){
+        // Arrange
+        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
+                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
+
+        long id = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setOwner(ownerUser);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setId(id);
+
+        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class, () ->{
+            taskListService.getListById(id, unauthorisedUser);
+        });
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
+
+        // Verify that the repo was still called to try and fetch the list
+        verify(taskListRepo, times(1)).findById(id);
+
+    }
+
 }
