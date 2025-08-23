@@ -32,12 +32,13 @@ public class UserServiceImpl implements UserService {
 
     private User createUserFromDTO(UserRegistrationDTO dto){
 
-        return new User(
-                dto.getUsername().toLowerCase().trim(),
-                capitalise(dto.getFirstName()),
-                capitalise(dto.getLastName()),
-                dto.getEmail().toLowerCase().trim(),
-                passwordEncoder.encode(dto.getPassword()));
+        User user = new User();
+        user.setUsername(dto.getUsername().toLowerCase().trim());
+        user.setFirstName(capitalise(dto.getFirstName()));
+        user.setLastName(capitalise(dto.getLastName()));
+        user.setEmail(dto.getEmail().toLowerCase().trim());
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        return user;
     }
 
     private String capitalise(String word) {
