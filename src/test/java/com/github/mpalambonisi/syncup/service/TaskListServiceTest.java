@@ -125,6 +125,32 @@ public class TaskListServiceTest {
 
     }
 
+    @Test
+    void getListById_whenUserIsCollaborator_shouldReturnList(){
+        // Arrange
+        User collaborator = new User(2L, "johnsmith", "John", "Smith",
+                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
 
+        long id = 1L;
+        TaskList tasklist = new TaskList();
+        tasklist.setOwner(ownerUser);
+        tasklist.setTitle("Grocery Shopping List");
+        tasklist.getCollaborators().add(collaborator);
+        tasklist.setId(id);
+
+        when(taskListRepo.findById(id)).thenReturn(Optional.of(tasklist));
+
+        // Act
+        TaskList result = taskListService.getListById(id, collaborator);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.getCollaborators().contains(collaborator)).isTrue();
+        assertThat(result.getTitle()).isEqualTo(tasklist.getTitle());
+        assertThat(result.getOwner().getUsername()).isEqualTo(ownerUser.getUsername());
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(id);
+    }
 
 }
