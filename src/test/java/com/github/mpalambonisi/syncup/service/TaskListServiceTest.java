@@ -178,4 +178,20 @@ public class TaskListServiceTest {
 
     }
 
+    @Test
+    void getListById_withNonexistentListId_shouldThrowListNotFoundException(){
+        // Arrange
+        long invalidId = 999L;
+        when(taskListRepo.findById(invalidId)).thenReturn(Optional.empty());
+
+        // Assert & Act
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class, () -> {
+            taskListService.getListById(invalidId, ownerUser);
+        });
+        assertThat(exception.getMessage()).isEqualTo("List not found!");
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(invalidId);
+    }
+
 }
