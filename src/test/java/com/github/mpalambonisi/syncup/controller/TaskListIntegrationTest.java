@@ -68,7 +68,7 @@ public class TaskListIntegrationTest {
     void createList_asOwner_shouldReturn201CreatedAndList() throws Exception{
         // Arrange
         // 1. Create a user with a real encoded password and save them to the database
-        User ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+        User ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
@@ -117,7 +117,7 @@ public class TaskListIntegrationTest {
         // Arrange
         String title = "Grocery Shopping List";
         // 1. Create a user with a real encoded password and save them to the database
-        User ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+        User ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
@@ -148,7 +148,7 @@ public class TaskListIntegrationTest {
     void createList_withBlankTitle_shouldReturn400BadRequest(String invalidTitle, String expectedErrorMessage) throws Exception{
         // Arrange
         // 1. Create a user with a real encoded password and save them to the database
-        User ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+        User ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
@@ -170,7 +170,7 @@ public class TaskListIntegrationTest {
     @Test
     void getAllLists_asAuthenticatedUser_shouldReturn200OkAndLists() throws Exception{
         // Arrange
-        User ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+        User ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 

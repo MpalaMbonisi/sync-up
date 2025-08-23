@@ -32,7 +32,7 @@ public class TaskListServiceTest {
 
     @BeforeEach
     void setUp() {
-        ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+        ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", "StrongPassword1234");
     }
 

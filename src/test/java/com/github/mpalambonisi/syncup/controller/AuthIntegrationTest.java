@@ -112,7 +112,7 @@ public class AuthIntegrationTest {
     @Test
     void register_withExistingUsername_shouldReturn409Conflict() throws Exception{
         // Arrange
-        User existingUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+        User existingUser = new User(1L,"mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", passwordEncoder.encode("StrongPasswordword1234"));
         userRepository.save(existingUser);
         long userCountBefore = userRepository.count();
@@ -228,7 +228,7 @@ public class AuthIntegrationTest {
     @Test
     void login_withValidCredentials_shouldReturn200AndJwtToken() throws Exception{
         // Arrange
-        User existingUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+        User existingUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", passwordEncoder.encode("StrongPassword1234"));
         userRepository.save(existingUser);
         long userCountBefore = userRepository.count();
@@ -254,7 +254,7 @@ public class AuthIntegrationTest {
     @Test
     void login_withInvalidCredentials_shouldReturn401Unauthorised() throws Exception{
         // Arrange
-        User existingUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+        User existingUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", passwordEncoder.encode("StrongPassword1234"));
         userRepository.save(existingUser);
         long userCountBefore = userRepository.count();
@@ -278,7 +278,7 @@ public class AuthIntegrationTest {
     @Test
     void login_withEmptyFields_shouldReturn400BadRequest() throws Exception{
         // Arrange
-        User existingUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+        User existingUser = new User(1L,"mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", passwordEncoder.encode("StrongPassword1234"));
         userRepository.save(existingUser);
         long userCountBefore = userRepository.count();
@@ -306,7 +306,7 @@ public class AuthIntegrationTest {
     @Test
     void login_withBlankFields_shouldReturn400BadRequest() throws Exception{
         // Arrange
-        User existingUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+        User existingUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", passwordEncoder.encode("StrongPassword1234"));
         userRepository.save(existingUser);
         long userCountBefore = userRepository.count();
