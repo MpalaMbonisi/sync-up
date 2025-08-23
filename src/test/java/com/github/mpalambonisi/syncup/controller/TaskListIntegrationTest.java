@@ -199,7 +199,7 @@ public class TaskListIntegrationTest {
 
     @Test
     void getAllLists_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
-        // Arrange (No test data needed, as the request should be blocked before it hits the controller)
+        // Arrange - No test data needed, as the request should be blocked before it hits the controller
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/all"))
