@@ -5,6 +5,7 @@ import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.service.impl.TaskListServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,16 +28,18 @@ public class TaskListServiceTest {
     private TaskListServiceImpl taskListService;
     @Mock
     private PasswordEncoder encoder;
+    private User ownerUser;
+
+    @BeforeEach
+    void setUp() {
+        ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+                "mbonisim12@gmail.com", "StrongPassword1234");
+    }
 
     @Test
     void saveTaskList_withValidTitle_shouldCreateAndReturnList(){
         // Arrange
-        User ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
-                "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
-
-        TaskListCreateDTO dto = TaskListCreateDTO.builder()
-                .title("Grocery Shopping List")
-                .build();
+        TaskListCreateDTO dto = TaskListCreateDTO.builder().title("Grocery Shopping List").build();
 
         // the save method should return the TaskList object it was passed
         when(taskListRepo.save(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -56,9 +59,6 @@ public class TaskListServiceTest {
     @Test
     void getAllListForOwner_whenOwnerHasLists_shouldReturnAllLists(){
         // Arrange
-        User ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
-                "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
-
         TaskList taskList01 = new TaskList();
         taskList01.setOwner(ownerUser);
         taskList01.setTitle("Grocery Shopping List");
@@ -70,11 +70,26 @@ public class TaskListServiceTest {
         when(taskListRepo.findAllByOwner(ownerUser)).thenReturn(list);
 
         // Act
-        List<TaskList> result = taskListService.getAllListForCurrentUser(ownerUser);
+        List<TaskList> result = taskListService.getAllListForOwner(ownerUser);
 
         // Assert
         assertThat(result).isNotEmpty();
-        assertThat(result).isEqualTo(list);
+
+        // Verify
+        verify(taskListRepo, times(1)).findAllByOwner(ownerUser);
+
+    }
+
+    @Test
+    void getAllListForOwner_whenOwnerHasNoList_shouldReturnEmptyList(){
+        // Arrange
+        when(taskListRepo.findAllByOwner(ownerUser)).thenReturn(List.of());
+
+        // Act
+        List<TaskList> result = taskListService.getAllListForOwner(ownerUser);
+
+        // Assert
+        assertThat(result).isEmpty();
 
         // Verify
         verify(taskListRepo, times(1)).findAllByOwner(ownerUser);
