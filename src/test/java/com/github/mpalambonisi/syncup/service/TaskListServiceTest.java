@@ -12,6 +12,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -49,6 +51,34 @@ public class TaskListServiceTest {
 
         // Verify
         verify(taskListRepo, times(1)).save(any(TaskList.class));
+    }
+
+    @Test
+    void getAllListForOwner_whenOwnerHasLists_shouldReturnAllLists(){
+        // Arrange
+        User ownerUser = new User("mbonisimpala", "Mbonisi", "Mpala",
+                "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
+
+        TaskList taskList01 = new TaskList();
+        taskList01.setOwner(ownerUser);
+        taskList01.setTitle("Grocery Shopping List");
+        TaskList taskList02 = new TaskList();
+        taskList02.setOwner(ownerUser);
+        taskList02.setTitle("Clothing Wishlist");
+
+        List<TaskList> list = List.of(taskList01, taskList02);
+        when(taskListRepo.findAllByOwner(ownerUser)).thenReturn(list);
+
+        // Act
+        List<TaskList> result = taskListService.getAllListForCurrentUser(ownerUser);
+
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).isEqualTo(list);
+
+        // Verify
+        verify(taskListRepo, times(1)).findAllByOwner(ownerUser);
+
     }
 
 }
