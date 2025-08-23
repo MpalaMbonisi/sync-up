@@ -1,10 +1,13 @@
 package com.github.mpalambonisi.syncup.service;
 
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
+import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
+import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.service.impl.TaskListServiceImpl;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,7 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
+import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -95,5 +100,31 @@ public class TaskListServiceTest {
         verify(taskListRepo, times(1)).findAllByOwner(ownerUser);
 
     }
+
+    @Test
+    void getListById_whenUserIsOwner_shouldReturnList(){
+        // Arrange
+        long id = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.setId(id);
+
+        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+
+        // Act
+        TaskList result = taskListService.getListById(1L, ownerUser);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.getTitle()).isEqualTo(taskList.getTitle());
+        assertThat(result.getOwner().getUsername()).isEqualTo(ownerUser.getUsername());
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(1L);
+
+    }
+
+
 
 }
