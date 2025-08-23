@@ -3,6 +3,8 @@ package com.github.mpalambonisi.syncup.service.impl;
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
+import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
+import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.exception.TitleAlreadyExistsException;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
@@ -12,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +43,19 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public TaskList getListById(Long id, User user) {
-        return null;
+        Optional<TaskList> foundList = taskListRepository.findById(id);
+        if(foundList.isEmpty()){
+            throw new ListNotFoundException("List not found!");
+        }
+        boolean isOwner = foundList.get().getOwner().getUsername().equals(user.getUsername());
+        boolean isCollaborator = foundList.get().getCollaborators().contains(user);
+
+        if(isOwner || isCollaborator){
+            return foundList.get();
+        }
+        else{
+            throw new AccessDeniedException("User is not authorised to access this list!");
+        }
     }
 
     @Override
