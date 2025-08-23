@@ -4,18 +4,19 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class TaskItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @NonNull
+    @Column(nullable = false)
     private String description;
-    @NonNull
+    @Column(nullable = false)
     private boolean isCompleted;
-    @NonNull
     @ManyToOne
+    @JoinColumn(name = "tasklist_id", nullable = false)
     private TaskList taskList;
 }

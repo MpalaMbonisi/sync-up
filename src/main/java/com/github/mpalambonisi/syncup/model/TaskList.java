@@ -9,22 +9,26 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
+@Table(name = "task_lists")
 public class TaskList {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @NonNull
+
+    @Column(nullable = false)
     private String title;
-    @NonNull
+
     @ManyToOne
+    @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
-    @NonNull
-    @OneToMany
+
+    @OneToMany(mappedBy = "taskList", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TaskItem> tasks = new ArrayList<>();
-    @NonNull
+
     @ManyToMany
     private Set<User> collaborators = new HashSet<>();
 }
