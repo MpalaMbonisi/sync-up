@@ -21,7 +21,7 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public List<TaskList> getAllListForOwner(User user) {
-        return null;
+        return taskListRepository.findAllByOwner(user);
     }
 
     @Override
