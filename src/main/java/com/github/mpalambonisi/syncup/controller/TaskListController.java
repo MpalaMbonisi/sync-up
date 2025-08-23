@@ -14,6 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/list")
@@ -23,8 +26,10 @@ public class TaskListController {
     private final TaskListServiceImpl taskListService;
 
     @GetMapping("/all")
-    public ResponseEntity<HttpStatus> getAllLists(@AuthenticationPrincipal User currentUser){
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    public ResponseEntity<List<TaskListResponseDTO>> getAllLists(@AuthenticationPrincipal User currentUser){
+        List<TaskList> tasklist = taskListService.getAllListForOwner(currentUser);
+        List<TaskListResponseDTO> listDTO = tasklist.stream().map(this::convertIntoDto).toList();
+        return ResponseEntity.ok(listDTO);
     }
 
     @PostMapping("/create")
@@ -64,6 +69,17 @@ public class TaskListController {
     @GetMapping("/{id}/collaborator/all")
     public ResponseEntity<HttpStatus> getAllCollaborators(@PathVariable Long id, @AuthenticationPrincipal User currentUser){
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    private TaskListResponseDTO convertIntoDto(TaskList taskList){
+        return TaskListResponseDTO.builder()
+                .title(taskList.getTitle())
+                .owner(taskList.getOwner().getUsername())
+                .collaborators(taskList.getCollaborators()
+                        .stream()
+                        .map(User::getUsername)
+                        .collect(Collectors.toSet()))
+                .build();
     }
 
 }
