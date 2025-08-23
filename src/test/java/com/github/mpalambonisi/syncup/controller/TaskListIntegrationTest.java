@@ -68,8 +68,12 @@ public class TaskListIntegrationTest {
     void createList_asOwner_shouldReturn201CreatedAndList() throws Exception{
         // Arrange
         // 1. Create a user with a real encoded password and save them to the database
-        User ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
-                "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
+        User ownerUser = new User();
+        ownerUser.setUsername("mbonisimpala");
+        ownerUser.setFirstName("Mbonisi");
+        ownerUser.setLastName("Mpala");
+        ownerUser.setEmail("mbonisim12@gmail.com");
+        ownerUser.setPassword(encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
         TaskListCreateDTO dto = TaskListCreateDTO.builder()
@@ -117,8 +121,12 @@ public class TaskListIntegrationTest {
         // Arrange
         String title = "Grocery Shopping List";
         // 1. Create a user with a real encoded password and save them to the database
-        User ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
-                "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
+        User ownerUser = new User();
+        ownerUser.setUsername("mbonisimpala");
+        ownerUser.setFirstName("Mbonisi");
+        ownerUser.setLastName("Mpala");
+        ownerUser.setEmail("mbonisim12@gmail.com");
+        ownerUser.setPassword(encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
         // Create Task-list and save it to the database
@@ -148,8 +156,12 @@ public class TaskListIntegrationTest {
     void createList_withBlankTitle_shouldReturn400BadRequest(String invalidTitle, String expectedErrorMessage) throws Exception{
         // Arrange
         // 1. Create a user with a real encoded password and save them to the database
-        User ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
-                "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
+        User ownerUser = new User();
+        ownerUser.setUsername("mbonisimpala");
+        ownerUser.setFirstName("Mbonisi");
+        ownerUser.setLastName("Mpala");
+        ownerUser.setEmail("mbonisim12@gmail.com");
+        ownerUser.setPassword(encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
         TaskListCreateDTO dto = new TaskListCreateDTO(invalidTitle);
@@ -170,8 +182,12 @@ public class TaskListIntegrationTest {
     @Test
     void getAllLists_asAuthenticatedUser_shouldReturn200OkAndLists() throws Exception{
         // Arrange
-        User ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
-                "mbonisim12@gmail.com", encoder.encode("StrongPassword1234"));
+        User ownerUser = new User();
+        ownerUser.setUsername("mbonisimpala");
+        ownerUser.setFirstName("Mbonisi");
+        ownerUser.setLastName("Mpala");
+        ownerUser.setEmail("mbonisim12@gmail.com");
+        ownerUser.setPassword(encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
         TaskList taskList01 = new TaskList();
@@ -191,9 +207,9 @@ public class TaskListIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].title").value("Grocery Shopping List"))
-                .andExpect(jsonPath("$[0].owner").value(ownerUser.getUsername()))
-                .andExpect(jsonPath("$[1].title").value("Clothing Wishlist"))
+                .andExpect(jsonPath("$[1].title").value("Grocery Shopping List"))
+                .andExpect(jsonPath("$[1].owner").value(ownerUser.getUsername()))
+                .andExpect(jsonPath("$[0].title").value("Clothing Wishlist"))
                 .andExpect(jsonPath("$[0].owner").value(ownerUser.getUsername()));
     }
 
