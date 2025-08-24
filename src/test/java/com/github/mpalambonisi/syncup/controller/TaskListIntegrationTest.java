@@ -7,6 +7,7 @@ import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -14,8 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
@@ -23,7 +22,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -52,6 +50,7 @@ public class TaskListIntegrationTest {
     private UserRepository userRepository;
     @Autowired
     private PasswordEncoder encoder;
+    private User ownerUser;
 
     // Configure Test containers
     @Container
@@ -64,16 +63,19 @@ public class TaskListIntegrationTest {
         registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
     }
 
-    @Test
-    void createList_asOwner_shouldReturn201CreatedAndList() throws Exception{
-        // Arrange
-        // 1. Create a user with a real encoded password and save them to the database
+    @BeforeEach
+    void setUp(){
         User ownerUser = new User();
         ownerUser.setUsername("mbonisimpala");
         ownerUser.setFirstName("Mbonisi");
         ownerUser.setLastName("Mpala");
         ownerUser.setEmail("mbonisim12@gmail.com");
         ownerUser.setPassword(encoder.encode("StrongPassword1234"));
+    }
+
+    @Test
+    void createList_asOwner_shouldReturn201CreatedAndList() throws Exception{
+        // Arrange
         userRepository.save(ownerUser);
 
         TaskListCreateDTO dto = TaskListCreateDTO.builder()
@@ -98,7 +100,6 @@ public class TaskListIntegrationTest {
     @Test
     void createList_asUnauthorisedUser_shouldReturn401Unauthorized() throws Exception{
         // Arrange
-        // Skip authorisation
 
         TaskListCreateDTO dto = TaskListCreateDTO.builder()
                 .title("Grocery Shopping List")
@@ -120,13 +121,6 @@ public class TaskListIntegrationTest {
     void createList_withDuplicateTitle_shouldReturn409Conflict() throws Exception{
         // Arrange
         String title = "Grocery Shopping List";
-        // 1. Create a user with a real encoded password and save them to the database
-        User ownerUser = new User();
-        ownerUser.setUsername("mbonisimpala");
-        ownerUser.setFirstName("Mbonisi");
-        ownerUser.setLastName("Mpala");
-        ownerUser.setEmail("mbonisim12@gmail.com");
-        ownerUser.setPassword(encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
         // Create Task-list and save it to the database
@@ -155,13 +149,6 @@ public class TaskListIntegrationTest {
     @CsvSource({"'', 'Title cannot be empty.'", "'   ', 'Title cannot be blank.'"})
     void createList_withBlankTitle_shouldReturn400BadRequest(String invalidTitle, String expectedErrorMessage) throws Exception{
         // Arrange
-        // 1. Create a user with a real encoded password and save them to the database
-        User ownerUser = new User();
-        ownerUser.setUsername("mbonisimpala");
-        ownerUser.setFirstName("Mbonisi");
-        ownerUser.setLastName("Mpala");
-        ownerUser.setEmail("mbonisim12@gmail.com");
-        ownerUser.setPassword(encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
         TaskListCreateDTO dto = new TaskListCreateDTO(invalidTitle);
@@ -182,12 +169,6 @@ public class TaskListIntegrationTest {
     @Test
     void getAllLists_asAuthenticatedUser_shouldReturn200OkAndLists() throws Exception{
         // Arrange
-        User ownerUser = new User();
-        ownerUser.setUsername("mbonisimpala");
-        ownerUser.setFirstName("Mbonisi");
-        ownerUser.setLastName("Mpala");
-        ownerUser.setEmail("mbonisim12@gmail.com");
-        ownerUser.setPassword(encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
 
         TaskList taskList01 = new TaskList();
@@ -220,6 +201,25 @@ public class TaskListIntegrationTest {
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/all"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getListById_asOwner_shouldReturn200AndList() throws Exception{
+        // Arrange
+        userRepository.save(ownerUser);
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        TaskList result = taskListRepository.save(taskList);
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + result.getId())
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Grocery Shopping List"))
+                .andExpect(jsonPath("$.owner").value("mbonisimpala"));
     }
 
 }
