@@ -45,8 +45,9 @@ public class TaskListController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<HttpStatus> getListById(@PathVariable Long id, @AuthenticationPrincipal User currentUser){
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    public ResponseEntity<TaskListResponseDTO> getListById(@PathVariable Long id, @AuthenticationPrincipal User currentUser){
+        TaskListResponseDTO responseDTO = convertIntoDto(taskListService.getListById(id, currentUser));
+        return ResponseEntity.ok(responseDTO);
     }
 
     @DeleteMapping("/{id}")
