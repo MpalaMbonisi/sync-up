@@ -220,7 +220,11 @@ public class TaskListIntegrationTest {
     void getListById_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
         // Arrange
         User unauthorizedUser = new User();
-        unauthorizedUser.setUsername("unauthorizedUser");
+        unauthorizedUser.setUsername("karensanders");
+        unauthorizedUser.setFirstName("Karen");
+        unauthorizedUser.setLastName("Sanders");
+        unauthorizedUser.setEmail("karensanders@gmail.com");
+        unauthorizedUser.setPassword(encoder.encode("ReallyStrongPassword1234"));
         userRepository.save(unauthorizedUser);
 
         TaskList taskList = new TaskList();
