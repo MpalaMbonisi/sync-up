@@ -243,4 +243,34 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
     }
 
+    @Test
+    void getListById_asCollaboratorUser_shouldReturn200AndList() throws Exception{
+        // Arrange
+        User collaborator = new User();
+        collaborator.setUsername("johnsmith");
+        collaborator.setFirstName("John");
+        collaborator.setLastName("Smith");
+        collaborator.setEmail("johnsmith@yahoo.com");
+        collaborator.setPassword(encoder.encode("VeryStrongPassword"));
+
+        userRepository.save(collaborator);
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.getCollaborators().add(collaborator);
+
+        TaskList savedTaskList = taskListRepository.save(taskList);
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + savedTaskList.getId())
+                .with(SecurityMockMvcRequestPostProcessors.user(collaborator)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Grocery Shopping List"))
+                .andExpect(jsonPath("$.owner").value("mbonisimpala"))
+                .andExpect(jsonPath("$.collaborators.length()").value(1))
+                .andExpect(jsonPath("$.collaborators[0]").value("johnsmith"));
+
+    }
+
 }
