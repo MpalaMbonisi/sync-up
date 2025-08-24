@@ -212,14 +212,35 @@ public class TaskListIntegrationTest {
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
 
-        TaskList result = taskListRepository.save(taskList);
+        TaskList savedTaskList = taskListRepository.save(taskList);
 
         // Act & Assert
-        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + result.getId())
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + savedTaskList.getId())
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Grocery Shopping List"))
                 .andExpect(jsonPath("$.owner").value("mbonisimpala"));
+    }
+
+    @Test
+    void getListById_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        User unauthorizedUser = new User();
+        unauthorizedUser.setId(2L); // to ensure they are not the owner
+        unauthorizedUser.setUsername("unauthorizedUser");
+        userRepository.save(unauthorizedUser);
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        TaskList savedTaskList = taskListRepository.save(taskList);
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + savedTaskList.getId())
+                        .with(SecurityMockMvcRequestPostProcessors.user(unauthorizedUser)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
     }
 
 }
