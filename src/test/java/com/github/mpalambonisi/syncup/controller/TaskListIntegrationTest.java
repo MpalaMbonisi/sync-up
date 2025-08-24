@@ -273,4 +273,18 @@ public class TaskListIntegrationTest {
 
     }
 
+    @Test
+    void getListById_withNonExistentListId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        long invalidId = 999L;
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + invalidId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("List not found!"));
+
+    }
+
 }
