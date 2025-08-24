@@ -35,6 +35,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException ex){
+        ErrorResponse error = new ErrorResponse(List.of(ex.getMessage()));
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(TitleAlreadyExistsException.class)
     public ResponseEntity<Object> handleTitleAlreadyExistsException(TitleAlreadyExistsException ex){
         ErrorResponse error = new ErrorResponse(List.of(ex.getMessage()));
