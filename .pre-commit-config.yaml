@@ -1,0 +1,39 @@
+# .pre-commit-config.yaml
+repos:
+  -   repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.6.0
+      hooks:
+        -   id: trailing-whitespace
+        -   id: end-of-file-fixer
+        -   id: check-yaml
+        -   id: check-merge-conflict
+
+  -   repo: https://github.com/streetsidesoftware/cspell-cli
+      rev: v9.2.0
+      hooks:
+        -   id: cspell
+            name: Spell Check (British English)
+            args: ["--config", "./cspell.json"] # Create this config file next
+
+  -   repo: https://github.com/compilerla/conventional-pre-commit
+      rev: v3.2.0
+      hooks:
+        -   id: conventional-pre-commit
+            stages: [commit-msg] # This hook runs on the commit message itself
+
+  # Local hooks to run your Maven plugins
+  -   repo: local
+      hooks:
+        -   id: maven-format
+            name: Maven Formatter
+            entry: mvn formatter:format
+            language: system
+            types: [java]
+            stages: [commit]
+
+        -   id: maven-checkstyle
+            name: Maven Linter
+            entry: mvn checkstyle:check
+            language: system
+            types: [java]
+            stages: [commit]
