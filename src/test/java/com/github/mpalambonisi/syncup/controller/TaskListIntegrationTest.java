@@ -50,7 +50,7 @@ public class TaskListIntegrationTest {
     private UserRepository userRepository;
     @Autowired
     private PasswordEncoder encoder;
-    private User ownerUser;
+    private final User ownerUser = new User();
 
     // Configure Test containers
     @Container
@@ -65,19 +65,17 @@ public class TaskListIntegrationTest {
 
     @BeforeEach
     void setUp(){
-        User ownerUser = new User();
         ownerUser.setUsername("mbonisimpala");
         ownerUser.setFirstName("Mbonisi");
         ownerUser.setLastName("Mpala");
         ownerUser.setEmail("mbonisim12@gmail.com");
         ownerUser.setPassword(encoder.encode("StrongPassword1234"));
+        userRepository.save(ownerUser);
     }
 
     @Test
     void createList_asOwner_shouldReturn201CreatedAndList() throws Exception{
         // Arrange
-        userRepository.save(ownerUser);
-
         TaskListCreateDTO dto = TaskListCreateDTO.builder()
                 .title("Grocery Shopping List")
                 .build();
@@ -121,7 +119,6 @@ public class TaskListIntegrationTest {
     void createList_withDuplicateTitle_shouldReturn409Conflict() throws Exception{
         // Arrange
         String title = "Grocery Shopping List";
-        userRepository.save(ownerUser);
 
         // Create Task-list and save it to the database
         TaskList existingtaskList = new TaskList();
@@ -149,7 +146,6 @@ public class TaskListIntegrationTest {
     @CsvSource({"'', 'Title cannot be empty.'", "'   ', 'Title cannot be blank.'"})
     void createList_withBlankTitle_shouldReturn400BadRequest(String invalidTitle, String expectedErrorMessage) throws Exception{
         // Arrange
-        userRepository.save(ownerUser);
 
         TaskListCreateDTO dto = new TaskListCreateDTO(invalidTitle);
 
@@ -169,7 +165,6 @@ public class TaskListIntegrationTest {
     @Test
     void getAllLists_asAuthenticatedUser_shouldReturn200OkAndLists() throws Exception{
         // Arrange
-        userRepository.save(ownerUser);
 
         TaskList taskList01 = new TaskList();
         taskList01.setOwner(ownerUser);
@@ -206,7 +201,6 @@ public class TaskListIntegrationTest {
     @Test
     void getListById_asOwner_shouldReturn200AndList() throws Exception{
         // Arrange
-        userRepository.save(ownerUser);
 
         TaskList taskList = new TaskList();
         taskList.setTitle("Grocery Shopping List");
@@ -226,7 +220,6 @@ public class TaskListIntegrationTest {
     void getListById_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
         // Arrange
         User unauthorizedUser = new User();
-        unauthorizedUser.setId(2L); // to ensure they are not the owner
         unauthorizedUser.setUsername("unauthorizedUser");
         userRepository.save(unauthorizedUser);
 
@@ -279,7 +272,8 @@ public class TaskListIntegrationTest {
         long invalidId = 999L;
 
         // Act & Assert
-        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + invalidId))
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + invalidId)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
