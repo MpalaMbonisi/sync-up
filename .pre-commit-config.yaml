@@ -29,11 +29,11 @@ repos:
             entry: mvn formatter:format
             language: system
             types: [java]
-            stages: [commit]
+            stages: [pre-commit]
 
         -   id: maven-checkstyle
             name: Maven Linter
             entry: mvn checkstyle:check
             language: system
             types: [java]
-            stages: [commit]
+            stages: [pre-commit]
