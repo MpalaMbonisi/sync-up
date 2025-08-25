@@ -13,3 +13,12 @@ repos:
       hooks:
         -   id: conventional-pre-commit
             stages: [commit-msg] # This hook runs on the commit message itself
+
+  -   repo: local
+      hooks:
+        -   id: maven-verify
+            name: Maven Verify
+            entry: ./mvnw verify
+            language: system
+            stages: [push] # This hook will only run on 'git push'
+            always_run: true # Ensures it runs even if no files changed
