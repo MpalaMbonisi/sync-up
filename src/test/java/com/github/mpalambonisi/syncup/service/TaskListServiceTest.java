@@ -214,4 +214,30 @@ public class TaskListServiceTest {
         verify(taskListRepo, times(1)).deleteById(id);
     }
 
+    @Test
+    void removeListById_UserIsNotOwner_shouldThrowAccessDeniedException(){
+        // Arrange
+        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
+                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
+
+        long id = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(id);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        doNothing().when(taskListRepo).deleteById(id);
+
+        // Act
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class, () ->{
+            taskListService.removeListById(id, unauthorisedUser);
+        });
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access to delete this list!");
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(id);
+        verify(taskListRepo, never()).deleteById(id);
+    }
+
 }
