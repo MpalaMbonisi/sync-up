@@ -8,13 +8,6 @@ repos:
         -   id: check-yaml
         -   id: check-merge-conflict
 
-  -   repo: https://github.com/streetsidesoftware/cspell-cli
-      rev: v9.2.0
-      hooks:
-        -   id: cspell
-            name: Spell Check (British English)
-            args: ["--config", "./cspell.json"] # Create this config file next
-
   -   repo: https://github.com/compilerla/conventional-pre-commit
       rev: v3.2.0
       hooks:
