@@ -22,4 +22,5 @@ repos:
                 entry: bash ./mvnw verify
                 language: system
                 stages: [ pre-push ]
+                pass_filenames: false
                 always_run: true
