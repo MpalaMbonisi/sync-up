@@ -168,9 +168,8 @@ public class TaskListServiceTest {
         when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class, () ->{
-            taskListService.getListById(id, unauthorisedUser);
-        });
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskListService.getListById(id, unauthorisedUser));
         assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
 
         // Verify that the repo was still called to try and fetch the list
@@ -230,9 +229,34 @@ public class TaskListServiceTest {
         doNothing().when(taskListRepo).deleteById(id);
 
         // Act
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class, () ->{
-            taskListService.removeListById(id, unauthorisedUser);
-        });
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskListService.removeListById(id, unauthorisedUser));
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access to delete this list!");
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(id);
+        verify(taskListRepo, never()).deleteById(id);
+    }
+
+    @Test
+    void removeListById_whenUserIsCollaborator_shouldThrowAccessDeniedException(){
+        // Arrange
+        User collaborator = new User(2L, "johnsmith", "John", "Smith",
+                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
+
+        long id = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(id);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.getCollaborators().add(collaborator);
+
+        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        doNothing().when(taskListRepo).deleteById(id);
+
+        // Act
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskListService.removeListById(id, collaborator));
         assertThat(exception.getMessage()).isEqualTo("User is not authorised to access to delete this list!");
 
         // Verify
