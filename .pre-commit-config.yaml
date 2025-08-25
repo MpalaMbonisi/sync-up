@@ -20,5 +20,5 @@ repos:
             name: Maven Verify
             entry: ./mvnw verify
             language: system
-            stages: [push] # This hook will only run on 'git push'
+            stages: [pre-push] # This hook will only run on 'git push'
             always_run: true # Ensures it runs even if no files changed
