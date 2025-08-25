@@ -2,7 +2,7 @@ name: Java CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" ] # Or your primary branch
   pull_request:
     branches: [ "main" ]
 
@@ -52,6 +52,15 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
+
+      # New step to cache the OWASP dependency-check data
+      - name: Cache OWASP Dependency-Check data
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: ${{ runner.os }}-owasp-data-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-owasp-data-
 
       - name: Run OWASP Dependency-Check
         run: ./mvnw -B org.owasp:dependency-check-maven:check
