@@ -14,11 +14,12 @@ repos:
         -   id: conventional-pre-commit
             stages: [commit-msg] # This hook runs on the commit message itself
 
-  -   repo: local
-      hooks:
-        -   id: maven-verify
-            name: Maven Verify
-            entry: ./mvnw verify
-            language: system
-            stages: [pre-push] # This hook will only run on 'git push'
-            always_run: true # Ensures it runs even if no files changed
+  -     repo: local
+        hooks:
+            -   id: maven-verify
+                name: Maven Verify
+                # Use bash to execute the maven wrapper script
+                entry: bash ./mvnw verify
+                language: system
+                stages: [ pre-push ]
+                always_run: true
