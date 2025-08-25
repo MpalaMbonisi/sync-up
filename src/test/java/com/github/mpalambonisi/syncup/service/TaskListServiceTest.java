@@ -194,4 +194,24 @@ public class TaskListServiceTest {
         verify(taskListRepo, times(1)).findById(invalidId);
     }
 
+    @Test
+    void removeListById_whenUserIsOwner_shouldDeleteListSuccessfully() {
+        // Arrange
+        long id = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(id);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        doNothing().when(taskListRepo).deleteById(id);
+
+        // Act
+        taskListService.removeListById(id, ownerUser);
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(id);
+        verify(taskListRepo, times(1)).deleteById(id);
+    }
+
 }
