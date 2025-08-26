@@ -99,8 +99,21 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public TaskList removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user) {
-        return null;
+        TaskList foundTask = taskListRepository.findById(id)
+                .orElseThrow(() -> new ListNotFoundException("List not found!"));
+
+        if (!foundTask.getOwner().getUsername().equals(user.getUsername()))
+            throw new AccessDeniedException("User is not authorised to remove collaborators!");
+
+        User collaborator = userRepository.findByUsername(dto.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("Collaborator username not found!"));
+
+        foundTask.getCollaborators().remove(collaborator);
+
+        return taskListRepository.save(foundTask);
     }
+
+    // Create method to check authorised user
 
     @Override
     public List<String> getAllCollaborators(Long id, User user) {
