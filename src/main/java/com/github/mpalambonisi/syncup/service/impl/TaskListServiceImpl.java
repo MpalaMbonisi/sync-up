@@ -9,10 +9,13 @@ import com.github.mpalambonisi.syncup.exception.TitleAlreadyExistsException;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
+import com.github.mpalambonisi.syncup.repository.UserRepository;
 import com.github.mpalambonisi.syncup.service.TaskListService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +24,7 @@ import java.util.Optional;
 public class TaskListServiceImpl implements TaskListService {
 
     private final TaskListRepository taskListRepository;
+    private final UserRepository userRepository;
 
     @Override
     public List<TaskList> getAllListForOwner(User user) {
@@ -73,8 +77,24 @@ public class TaskListServiceImpl implements TaskListService {
     }
 
     @Override
-    public List<String> addCollaborators(Long id, AddCollaboratorsRequestDTO dto, User user) {
-        return null;
+    public List<String> addCollaboratorsByUsername(Long id, AddCollaboratorsRequestDTO dto, User user) {
+        List<String> collabUserList = new ArrayList<>();
+
+        TaskList taskList = taskListRepository.findById(id)
+                .orElseThrow(() -> new ListNotFoundException("List not found!"));
+
+        String username = taskList.getOwner().getUsername();
+        if(!username.equals(user.getUsername()))
+            throw new AccessDeniedException("User is not authorised to add collaborators!");
+
+        for(String collaborator: dto.getCollaborators()){
+            User collabUser = userRepository.findByUsername(collaborator)
+                    .orElseThrow(() -> new UsernameNotFoundException("Collaborator username not found!"));
+            taskList.getCollaborators().add(collabUser);
+            collabUserList.add(collaborator);
+        }
+
+        return collabUserList;
     }
 
     @Override
