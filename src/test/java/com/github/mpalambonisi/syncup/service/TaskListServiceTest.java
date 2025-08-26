@@ -382,4 +382,26 @@ public class TaskListServiceTest {
         inOrder.verify(taskListRepo).findById(taskListId);
         inOrder.verify(userRepository).findByUsername("karensanders");
     }
+
+    @Test
+    void addCollaboratorsByUsername_whenTaskListIdIsNonexistent_shouldThrowListNotFoundException(){
+        // Arrange
+        long invalidId = 999L;
+        Set<String> usernames = new HashSet<>();
+        usernames.add("johnsmith");
+        usernames.add("nicolencube");
+        AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(usernames);
+
+        when(taskListRepo.findById(invalidId)).thenReturn(Optional.empty());
+
+        // Act
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
+                () -> taskListService.addCollaborators(invalidId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("List not found!");
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(invalidId);
+        verify(userRepository, never()).findByUsername("johnsmith");
+        verify(userRepository, never()).findByUsername("nicolencube");
+    }
 }
