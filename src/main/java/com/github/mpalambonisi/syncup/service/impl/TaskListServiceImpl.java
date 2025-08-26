@@ -47,15 +47,15 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public TaskList getListById(Long id, User user) {
-        Optional<TaskList> foundList = taskListRepository.findById(id);
-        if(foundList.isEmpty()){
-            throw new ListNotFoundException("List not found!");
-        }
-        boolean isOwner = foundList.get().getOwner().getUsername().equals(user.getUsername());
-        boolean isCollaborator = foundList.get().getCollaborators().contains(user);
+
+        TaskList foundList = taskListRepository.findById(id)
+                .orElseThrow(() -> new ListNotFoundException("List not found!"));
+
+        boolean isOwner = foundList.getOwner().getUsername().equals(user.getUsername());
+        boolean isCollaborator = foundList.getCollaborators().contains(user);
 
         if(isOwner || isCollaborator){
-            return foundList.get();
+            return foundList;
         }
         else{
             throw new AccessDeniedException("User is not authorised to access this list!");
@@ -64,11 +64,11 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public void removeListById(Long id, User user) {
-        Optional<TaskList> foundList = taskListRepository.findById(id);
 
-        if(foundList.isEmpty()) throw new ListNotFoundException("List not found!");
+        TaskList foundList = taskListRepository.findById(id)
+                .orElseThrow(() -> new ListNotFoundException("List not found!"));
 
-        if(foundList.get().getOwner().getUsername().equals(user.getUsername())){
+        if(foundList.getOwner().getUsername().equals(user.getUsername())){
             taskListRepository.deleteById(id);
         }
         else{
