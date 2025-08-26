@@ -490,4 +490,23 @@ public class TaskListServiceTest {
         verify(userRepository, times(1)).findByUsername(collaboratorUsername);
         verify(taskListRepo, never()).save(any(TaskList.class));
     }
+
+    @Test
+    void removeCollaboratorByUsername_whenTaskListIdIsNonExistent_shouldThrowListNotFoundException(){
+        // Arrange
+        long invalidId = 999L;
+        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
+
+        when(taskListRepo.findById(invalidId)).thenReturn(Optional.empty());
+
+        // Act
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
+                () -> taskListService.removeCollaboratorByUsername(invalidId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("List not found!");
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(invalidId);
+        verify(userRepository, never()).findByUsername("johnsmith");
+        verify(taskListRepo, never()).save(any(TaskList.class));
+    }
 }
