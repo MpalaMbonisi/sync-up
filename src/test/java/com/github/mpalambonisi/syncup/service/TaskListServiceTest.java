@@ -2,6 +2,7 @@ package com.github.mpalambonisi.syncup.service;
 
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
+import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.model.TaskList;
@@ -403,5 +404,37 @@ public class TaskListServiceTest {
         verify(taskListRepo, times(1)).findById(invalidId);
         verify(userRepository, never()).findByUsername("johnsmith");
         verify(userRepository, never()).findByUsername("nicolencube");
+    }
+
+    @Test
+    void removeCollaboratorByUsername_whenUserIsOwner_shouldRemoveCollaborator() {
+        // Arrange
+        String collaboratorUsername = "johnsmith";
+
+        User collaborator = new User();
+        collaborator.setUsername(collaboratorUsername);
+
+        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO(collaboratorUsername);
+
+        long taskListId = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(taskListId);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.getCollaborators().add(collaborator);
+
+        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(userRepository.findByUsername(collaboratorUsername)).thenReturn(Optional.of(collaborator));
+
+        // Act
+        taskListService.removeCollaboratorByUsername(taskListId, dto, ownerUser);
+
+        // Assert
+        assertThat(taskList.getCollaborators()).isEmpty();
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(userRepository, times(1)).findByUsername(collaboratorUsername);
+        verify(taskListRepo, times(1)).save(taskList);
     }
 }
