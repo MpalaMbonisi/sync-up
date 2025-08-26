@@ -463,4 +463,31 @@ public class TaskListServiceTest {
         verify(userRepository, never()).findByUsername("johnsmith");
         verify(taskListRepo, never()).save(any(TaskList.class));
     }
+
+    @Test
+    void removeCollaboratorByUsername_whenCollaboratorIsNonExistent_shouldThrowUsernameNotFoundException(){
+        // Arrange
+        String collaboratorUsername = "johnsmith"; // non-existent username for collaborator
+
+        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO(collaboratorUsername);
+
+        long taskListId = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(taskListId);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(userRepository.findByUsername(collaboratorUsername)).thenReturn(Optional.empty());
+
+        // Act
+        UsernameNotFoundException exception = Assertions.assertThrows(UsernameNotFoundException.class,
+                () -> taskListService.removeCollaboratorByUsername(taskListId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("Collaborator username not found!");
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(userRepository, times(1)).findByUsername(collaboratorUsername);
+        verify(taskListRepo, never()).save(any(TaskList.class));
+    }
 }
