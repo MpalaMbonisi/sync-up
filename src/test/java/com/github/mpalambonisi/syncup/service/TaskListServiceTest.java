@@ -1,23 +1,28 @@
 package com.github.mpalambonisi.syncup.service;
 
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
+import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
+import com.github.mpalambonisi.syncup.repository.UserRepository;
 import com.github.mpalambonisi.syncup.service.impl.TaskListServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +34,8 @@ public class TaskListServiceTest {
 
     @Mock
     private TaskListRepository taskListRepo;
+    @Mock
+    private UserRepository userRepository;
     @InjectMocks
     private TaskListServiceImpl taskListService;
     @Mock
@@ -279,4 +286,42 @@ public class TaskListServiceTest {
         verify(taskListRepo, never()).deleteById(invalidId);
     }
 
+    @Test
+    void addCollaboratorsByUsername_whenUserIsOwner_shouldReturnList(){
+        // Arrange
+        User collaborator01 = new User(2L, "johnsmith", "John", "Smith",
+                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
+
+        User collaborator02 = new User(3L, "nicolencube", "Nicole", "Ncube",
+                "nicolencube@gmail.com", encoder.encode("SuperStrongPassword1234"));
+
+        long taskListId = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(taskListId);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        Set<String> usernames = new HashSet<>();
+        usernames.add(collaborator01.getUsername());
+        usernames.add(collaborator02.getUsername());
+        AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(usernames);
+
+        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(userRepository.findByUsername(collaborator01.getUsername())).thenReturn(Optional.of(collaborator01));
+        when(userRepository.findByUsername(collaborator02.getUsername())).thenReturn(Optional.of(collaborator02));
+
+        // Act
+        List<String> savedCollaborators = taskListService.addCollaborators(taskListId, dto, ownerUser);
+
+        // Assert
+        assertThat(savedCollaborators)
+                        .hasSize(2)
+                        .containsExactlyInAnyOrder("johnsmith", "nicolencube");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepo, userRepository);
+        inOrder.verify(taskListRepo).findById(taskListId);
+        inOrder.verify(userRepository).findByUsername("johnsmith");
+        inOrder.verify(userRepository).findByUsername("nicolencube");
+    }
 }
