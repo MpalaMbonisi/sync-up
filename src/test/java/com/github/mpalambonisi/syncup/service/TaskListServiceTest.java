@@ -410,9 +410,8 @@ public class TaskListServiceTest {
     void removeCollaboratorByUsername_whenUserIsOwner_shouldRemoveCollaborator() {
         // Arrange
         String collaboratorUsername = "johnsmith";
-
-        User collaborator = new User();
-        collaborator.setUsername(collaboratorUsername);
+        User collaborator = new User(2L, "johnsmith", "John", "Smith",
+                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
 
         RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO(collaboratorUsername);
 
@@ -436,5 +435,32 @@ public class TaskListServiceTest {
         verify(taskListRepo, times(1)).findById(taskListId);
         verify(userRepository, times(1)).findByUsername(collaboratorUsername);
         verify(taskListRepo, times(1)).save(taskList);
+    }
+
+    @Test
+    void removeCollaboratorByUsername_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
+        // Arrange
+        User collaborator = new User(2L, "johnsmith", "John", "Smith",
+                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
+        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
+                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
+        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
+
+        long taskListId = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(taskListId);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.getCollaborators().add(collaborator);
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskListService.removeCollaboratorByUsername(taskListId, dto, unauthorisedUser));
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to remove collaborators!");
+
+        // verify
+        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(userRepository, never()).findByUsername("johnsmith");
+        verify(taskListRepo, never()).save(any(TaskList.class));
     }
 }
