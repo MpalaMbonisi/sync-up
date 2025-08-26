@@ -226,7 +226,6 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
 
         when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
-        doNothing().when(taskListRepo).deleteById(id);
 
         // Act
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
@@ -252,7 +251,6 @@ public class TaskListServiceTest {
         taskList.getCollaborators().add(collaborator);
 
         when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
-        doNothing().when(taskListRepo).deleteById(id);
 
         // Act
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
