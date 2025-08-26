@@ -60,7 +60,16 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public void removeListById(Long id, User user) {
+        Optional<TaskList> foundList = taskListRepository.findById(id);
 
+        if(foundList.isEmpty()) throw new ListNotFoundException("List not found!");
+
+        if(foundList.get().getOwner().getUsername().equals(user.getUsername())){
+            taskListRepository.deleteById(id);
+        }
+        else{
+            throw new AccessDeniedException("User is not authorised to access to delete this list!");
+        }
     }
 
     @Override
