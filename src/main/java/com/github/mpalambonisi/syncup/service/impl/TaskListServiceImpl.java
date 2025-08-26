@@ -98,8 +98,8 @@ public class TaskListServiceImpl implements TaskListService {
     }
 
     @Override
-    public void removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user) {
-
+    public TaskList removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user) {
+        return null;
     }
 
     @Override

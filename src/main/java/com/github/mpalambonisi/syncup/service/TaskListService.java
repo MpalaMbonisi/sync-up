@@ -14,6 +14,6 @@ public interface TaskListService {
     TaskList getListById(Long id, User user);
     void removeListById(Long id, User user);
     List<String> addCollaboratorsByUsername(Long id, AddCollaboratorsRequestDTO dto, User user);
-    void removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user);
+    TaskList removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user);
     List<String> getAllCollaborators(Long id, User user);
 }
