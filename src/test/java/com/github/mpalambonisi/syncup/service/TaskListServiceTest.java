@@ -453,6 +453,8 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
         taskList.getCollaborators().add(collaborator);
 
+        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskListService.removeCollaboratorByUsername(taskListId, dto, unauthorisedUser));
