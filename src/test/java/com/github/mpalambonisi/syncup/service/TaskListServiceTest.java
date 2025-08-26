@@ -312,7 +312,7 @@ public class TaskListServiceTest {
         when(userRepository.findByUsername(collaborator02.getUsername())).thenReturn(Optional.of(collaborator02));
 
         // Act
-        List<String> savedCollaborators = taskListService.addCollaborators(taskListId, dto, ownerUser);
+        List<String> savedCollaborators = taskListService.addCollaboratorsByUsername(taskListId, dto, ownerUser);
 
         // Assert
         assertThat(savedCollaborators)
@@ -347,7 +347,7 @@ public class TaskListServiceTest {
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
-                () -> taskListService.addCollaborators(taskListId, dto, unauthorisedUser));
+                () -> taskListService.addCollaboratorsByUsername(taskListId, dto, unauthorisedUser));
         assertThat(exception.getMessage()).isEqualTo("User is not authorised to add collaborators!");
 
         // verify
@@ -374,7 +374,7 @@ public class TaskListServiceTest {
 
         // Act & Assert
         UsernameNotFoundException exception = Assertions.assertThrows(UsernameNotFoundException.class,
-                () -> taskListService.addCollaborators(taskListId, dto, ownerUser));
+                () -> taskListService.addCollaboratorsByUsername(taskListId, dto, ownerUser));
         assertThat(exception.getMessage()).isEqualTo("Collaborator username not found!");
 
         // Verify
@@ -396,7 +396,7 @@ public class TaskListServiceTest {
 
         // Act
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
-                () -> taskListService.addCollaborators(invalidId, dto, ownerUser));
+                () -> taskListService.addCollaboratorsByUsername(invalidId, dto, ownerUser));
         assertThat(exception.getMessage()).isEqualTo("List not found!");
 
         // Verify
