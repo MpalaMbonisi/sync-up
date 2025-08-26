@@ -324,4 +324,34 @@ public class TaskListServiceTest {
         inOrder.verify(userRepository).findByUsername("johnsmith");
         inOrder.verify(userRepository).findByUsername("nicolencube");
     }
+
+    @Test
+    void addCollaboratorsByUsername_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
+        // Arrange
+        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
+                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
+
+        Set<String> usernames = new HashSet<>();
+        usernames.add("johnsmith");
+        usernames.add("nicolencube");
+        AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(usernames);
+
+        long taskListId = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(taskListId);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskListService.addCollaborators(taskListId, dto, unauthorisedUser));
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to add collaborators!");
+
+        // verify
+        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(userRepository, never()).findByUsername("johnsmith");
+        verify(userRepository, never()).findByUsername("nicolencube");
+    }
 }
