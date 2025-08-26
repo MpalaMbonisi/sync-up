@@ -17,6 +17,7 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.HashSet;
@@ -353,5 +354,32 @@ public class TaskListServiceTest {
         verify(taskListRepo, times(1)).findById(taskListId);
         verify(userRepository, never()).findByUsername("johnsmith");
         verify(userRepository, never()).findByUsername("nicolencube");
+    }
+
+    @Test
+    void addCollaboratorsByUsername_whenCollaboratorUsernameIsNonexistent_shouldThrowUsernameNotFoundException(){
+        // Arrange
+        Set<String> usernames = new HashSet<>();
+        usernames.add("karensanders"); // non-existent user
+        AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(usernames);
+
+        long taskListId = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(taskListId);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(userRepository.findByUsername("karensanders")).thenReturn(Optional.empty());
+
+        // Act & Assert
+        UsernameNotFoundException exception = Assertions.assertThrows(UsernameNotFoundException.class,
+                () -> taskListService.addCollaborators(taskListId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("Collaborator username not found!");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepo, userRepository);
+        inOrder.verify(taskListRepo).findById(taskListId);
+        inOrder.verify(userRepository).findByUsername("karensanders");
     }
 }
