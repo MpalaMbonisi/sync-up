@@ -331,4 +331,18 @@ public class TaskListIntegrationTest {
         assertThat(savedList.isPresent()).isTrue();
     }
 
+    @Test
+    void deleteListById_withNonexistentListId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        long invalidId = 999L;
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + invalidId)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("List not found!"));
+    }
+
 }
