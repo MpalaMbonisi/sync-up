@@ -587,4 +587,26 @@ public class TaskListServiceTest {
         verify(taskListRepo, times(1)).findById(invalidId);
         verify(taskListRepo, never()).save(any(TaskList.class));
     }
+
+    @Test
+    void getAllCollaborators_whenTaskListHasNoCollaborators_shouldReturnEmptyList(){
+        // Arrange
+        long taskListId = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(taskListId);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+
+        // Act
+        List<String> retrievedList = taskListService.getAllCollaborators(taskListId, ownerUser);
+
+        // Assert
+        assertThat(retrievedList).isEmpty();
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(taskListRepo, never()).save(any(TaskList.class));
+    }
 }
