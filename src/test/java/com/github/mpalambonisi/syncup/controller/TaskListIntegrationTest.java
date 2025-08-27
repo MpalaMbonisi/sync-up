@@ -304,4 +304,31 @@ public class TaskListIntegrationTest {
         assertThat(savedList).isEmpty();
     }
 
+    @Test
+    void deleteListById_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        User unauthorizedUser = new User();
+        unauthorizedUser.setUsername("karensanders");
+        unauthorizedUser.setFirstName("Karen");
+        unauthorizedUser.setLastName("Sanders");
+        unauthorizedUser.setEmail("karensanders@gmail.com");
+        unauthorizedUser.setPassword(encoder.encode("ReallyStrongPassword1234"));
+        userRepository.save(unauthorizedUser);
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        TaskList savedTaskList = taskListRepository.save(taskList);
+        long taskListId = savedTaskList.getId();
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId)
+                        .with(SecurityMockMvcRequestPostProcessors.user(unauthorizedUser)))
+                .andExpect(status().isForbidden());
+
+        // Post-Action Verification
+        Optional<TaskList> savedList = taskListRepository.findById(taskListId);
+        assertThat(savedList.isPresent()).isTrue();
+    }
+
 }
