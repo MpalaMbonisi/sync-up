@@ -345,4 +345,33 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.message").value("List not found!"));
     }
 
+    @Test
+    void deleteListById_whenUserIsCollaborator_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        User collaborator = new User();
+        collaborator.setUsername("johnsmith");
+        collaborator.setFirstName("John");
+        collaborator.setLastName("Smith");
+        collaborator.setEmail("johnsmith@yahoo.com");
+        collaborator.setPassword(encoder.encode("VeryStrongPassword"));
+        userRepository.save(collaborator);
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.getCollaborators().add(collaborator);
+
+        TaskList savedTaskList = taskListRepository.save(taskList);
+        long taskListId = savedTaskList.getId();
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId)
+                        .with(SecurityMockMvcRequestPostProcessors.user(collaborator)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User is not authorised to access to delete this list!"));
+
+        // Post-Action Verification
+        Optional<TaskList> savedList = taskListRepository.findById(taskListId);
+        assertThat(savedList.isPresent()).isTrue();
+    }
+
 }
