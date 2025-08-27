@@ -511,4 +511,34 @@ public class TaskListServiceTest {
         verify(userRepository, never()).findByUsername("johnsmith");
         verify(taskListRepo, never()).save(any(TaskList.class));
     }
+
+    @Test
+    void getAllCollaborators_whenUserIsOwner_shouldReturnList(){
+        // Arrange
+        List<User> collaborators = List.of(new User(2L, "johnsmith", "John", "Smith",
+                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234")),
+                new User(3L, "nicolencube", "Nicole", "Ncube",
+                        "nicolencube@gmail.com", encoder.encode("SuperStrongPassword1234")));
+
+        long taskListId = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(taskListId);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.getCollaborators().addAll(collaborators);
+
+        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+
+        // Act
+        List<String> retrievedList = taskListService.getAllCollaborators(taskListId, ownerUser);
+
+        // Assert
+        assertThat(retrievedList)
+                .hasSize(5)
+                .containsExactlyInAnyOrder("johnsmith", "nicolencube");
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(taskListRepo, never()).save(any(TaskList.class));
+    }
 }
