@@ -571,4 +571,20 @@ public class TaskListServiceTest {
         verify(taskListRepo, times(1)).findById(taskListId);
         verify(taskListRepo, never()).save(any(TaskList.class));
     }
+
+    @Test
+    void getAllCollaborators_whenTaskListIdIsNonexistent_shouldThrowListNotFoundException(){
+        // Arrange
+        long invalidId = 999L;
+        when(taskListRepo.findById(invalidId)).thenReturn(Optional.empty());
+
+        // Act
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
+                () -> taskListService.getAllCollaborators(invalidId, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("List not found!");
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(invalidId);
+        verify(taskListRepo, never()).save(any(TaskList.class));
+    }
 }
