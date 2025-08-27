@@ -534,7 +534,7 @@ public class TaskListServiceTest {
 
         // Assert
         assertThat(retrievedList)
-                .hasSize(5)
+                .hasSize(2)
                 .containsExactlyInAnyOrder("johnsmith", "nicolencube");
 
         // Verify
