@@ -324,7 +324,8 @@ public class TaskListIntegrationTest {
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId)
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorizedUser)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User is not authorised to access to delete this list!"));
 
         // Post-Action Verification
         Optional<TaskList> savedList = taskListRepository.findById(taskListId);
