@@ -52,7 +52,8 @@ public class TaskListController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<HttpStatus> deleteListById(@PathVariable Long id, @AuthenticationPrincipal User currentUser){
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        taskListService.removeListById(id, currentUser);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @PostMapping("/{id}/collaborator/add")
