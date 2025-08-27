@@ -31,8 +31,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.core.IsIterableContaining.hasItems;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Testcontainers
 @Transactional // To ensure each test run in a transaction is rolled back
@@ -283,6 +282,26 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.message.length()").value(1))
                 .andExpect(jsonPath("$.message").value("List not found!"));
 
+    }
+
+    @Test
+    void deleteListById_asOwner_shouldReturn204NoContent() throws Exception{
+        // Arrange
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        TaskList savedTaskList = taskListRepository.save(taskList);
+        long taskListId = savedTaskList.getId();
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId)
+                .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        // Post-Action Verification
+        Optional<TaskList> savedList = taskListRepository.findById(taskListId);
+        assertThat(savedList).isEmpty();
     }
 
 }
