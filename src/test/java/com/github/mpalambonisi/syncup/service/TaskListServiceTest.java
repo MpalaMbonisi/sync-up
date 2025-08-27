@@ -541,4 +541,34 @@ public class TaskListServiceTest {
         verify(taskListRepo, times(1)).findById(taskListId);
         verify(taskListRepo, never()).save(any(TaskList.class));
     }
+
+    @Test
+    void getAllCollaborators_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
+        // Arrange
+        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
+                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
+
+        List<User> collaborators = List.of(new User(2L, "johnsmith", "John", "Smith",
+                        "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234")),
+                new User(3L, "nicolencube", "Nicole", "Ncube",
+                        "nicolencube@gmail.com", encoder.encode("SuperStrongPassword1234")));
+
+        long taskListId = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setId(taskListId);
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.getCollaborators().addAll(collaborators);
+
+        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskListService.getAllCollaborators(taskListId, unauthorisedUser));
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to retrieve all collaborators");
+
+        // Verify
+        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(taskListRepo, never()).save(any(TaskList.class));
+    }
 }
