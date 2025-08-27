@@ -565,7 +565,7 @@ public class TaskListServiceTest {
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskListService.getAllCollaborators(taskListId, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to retrieve all collaborators");
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to retrieve all collaborators!");
 
         // Verify
         verify(taskListRepo, times(1)).findById(taskListId);
