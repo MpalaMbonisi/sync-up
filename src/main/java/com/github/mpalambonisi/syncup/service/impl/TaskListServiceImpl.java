@@ -113,8 +113,6 @@ public class TaskListServiceImpl implements TaskListService {
         return taskListRepository.save(foundTask);
     }
 
-    // Create method to check authorised user
-
     @Override
     public List<String> getAllCollaborators(Long id, User user) {
         TaskList foundTask = taskListRepository.findById(id)
