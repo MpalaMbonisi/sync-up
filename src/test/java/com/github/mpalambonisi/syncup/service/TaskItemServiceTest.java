@@ -2,6 +2,7 @@ package com.github.mpalambonisi.syncup.service;
 
 
 import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
+import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
@@ -9,6 +10,7 @@ import com.github.mpalambonisi.syncup.repository.TaskItemRepository;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 import com.github.mpalambonisi.syncup.service.impl.TaskItemServiceImpl;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,6 +81,28 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).save(any(TaskItem.class));
+    }
+
+    @Test
+    void saveTask_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
+        // Arrange
+        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
+                "karensanders@yahoo.com", "ReallyStrongPassword1234");
+
+        TaskItemCreateDTO dto = new TaskItemCreateDTO("1kg Banana");
+        long taskListId = 1L;
+        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
+
+        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskItemService.saveTask(taskListId, dto, unauthorisedUser));
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(taskListId);
     }
 
 }
