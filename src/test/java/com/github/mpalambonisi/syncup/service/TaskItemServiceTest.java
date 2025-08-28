@@ -107,4 +107,22 @@ public class TaskItemServiceTest {
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
+    @Test
+    void saveTask_withNonExistentTaskList_shouldThrowListNotFoundException(){
+        // Arrange
+        long invalidTaskListId = 999L; // non-existent ID
+        TaskItemCreateDTO dto = new TaskItemCreateDTO("1kg Banana");
+        when(taskListRepository.findById(invalidTaskListId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
+                () -> taskItemService.saveTask(invalidTaskListId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("List not found!");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(invalidTaskListId);
+        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+    }
+
 }
