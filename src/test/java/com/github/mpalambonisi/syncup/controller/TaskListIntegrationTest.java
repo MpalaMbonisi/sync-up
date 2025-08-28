@@ -415,10 +415,8 @@ public class TaskListIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Grocery Shopping List"))
-                .andExpect(jsonPath("$.owner").value("mbonisimpala"))
-                .andExpect(jsonPath("$.collaborators.length()").value(2))
-                .andExpect(jsonPath("$.collaborators",
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$",
                         hasItems("nicolencube", "johnsmith")));
 
         // Post-Action Verification
