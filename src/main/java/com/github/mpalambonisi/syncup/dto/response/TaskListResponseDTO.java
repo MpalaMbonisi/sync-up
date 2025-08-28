@@ -15,6 +15,7 @@ import java.util.Set;
 @NoArgsConstructor
 public class TaskListResponseDTO {
 
+    private long id;
     private String title;
     private String owner;
     private Set<String> collaborators;

@@ -75,6 +75,7 @@ public class TaskListController {
 
     private TaskListResponseDTO convertIntoDto(TaskList taskList){
         return TaskListResponseDTO.builder()
+                .id(taskList.getId())
                 .title(taskList.getTitle())
                 .owner(taskList.getOwner().getUsername())
                 .collaborators(taskList.getCollaborators()
