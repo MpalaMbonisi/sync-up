@@ -462,4 +462,36 @@ public class TaskListIntegrationTest {
         assertThat(retrievedTaskList.get().getCollaborators()).isEmpty();
     }
 
+    @Test
+    void addCollaboratorByUsername_withNonexistentCollaboratorUsername_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        String invalidUsername = "karensanders"; // non-existent
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        TaskList savedTaskList = taskListRepository.save(taskList);
+        long taskListId = savedTaskList.getId();
+
+        Set<String> collaboratorsList = new HashSet<>();
+        collaboratorsList.add(invalidUsername);
+        AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(collaboratorsList);
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + taskListId + "/collaborator/add")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("Collaborator username not found!"));
+
+        // Post-Action Verification
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getCollaborators()).isEmpty();
+    }
+
 }
