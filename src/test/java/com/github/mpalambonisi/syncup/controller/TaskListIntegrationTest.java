@@ -478,6 +478,7 @@ public class TaskListIntegrationTest {
         // Arrange
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
         TaskList taskList = new TaskList();
+        taskList.setOwner(ownerUser);
         taskList.setTitle("Grocery Shopping List");
         taskList.getCollaborators().add(collaborator);
 
@@ -504,6 +505,7 @@ public class TaskListIntegrationTest {
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "ReallyStrongPassword1234");
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
         TaskList taskList = new TaskList();
+        taskList.setOwner(ownerUser);
         taskList.setTitle("Grocery Shopping List");
         taskList.getCollaborators().add(collaborator);
 
