@@ -13,7 +13,6 @@ import java.util.Set;
 @NoArgsConstructor
 public class AddCollaboratorsRequestDTO {
 
-    @NotBlank(message = "Collaborator username should not be empty")
     @NotEmpty(message = "Please provide at least one collaborator.")
     Set<String> collaborators;
 }
