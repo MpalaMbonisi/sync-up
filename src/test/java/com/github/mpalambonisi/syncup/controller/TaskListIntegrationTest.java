@@ -549,4 +549,26 @@ public class TaskListIntegrationTest {
         assertThat(retrievedTaskList.isPresent()).isTrue();
         assertThat(retrievedTaskList.get().getCollaborators()).hasSize(1);
     }
+
+    @Test
+    void removeCollaboratorByUsername_withNonexistentTaskListId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        long invalidListId = 999L;
+        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + invalidListId + "/collaborator/remove")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("List not found!"));
+
+
+        // Post-Action verification
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(invalidListId);
+        assertThat(retrievedTaskList.isEmpty()).isTrue();
+    }
 }
