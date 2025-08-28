@@ -57,7 +57,7 @@ public class TaskListController {
     }
 
     @PostMapping("/{id}/collaborator/add")
-    public ResponseEntity<List<String>> addCollaborators(@PathVariable Long id,@Valid @RequestBody AddCollaboratorsRequestDTO dto,
+    public ResponseEntity<List<String>> addCollaboratorsByUsername(@PathVariable Long id,@Valid @RequestBody AddCollaboratorsRequestDTO dto,
                                                        @AuthenticationPrincipal User currentUser){
         return ResponseEntity.ok(taskListService.addCollaboratorsByUsername(id, dto, currentUser));
     }
