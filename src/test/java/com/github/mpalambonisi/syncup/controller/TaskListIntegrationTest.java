@@ -498,4 +498,31 @@ public class TaskListIntegrationTest {
         assertThat(retrievedTaskList.get().getCollaborators()).isEmpty();
     }
 
+    @Test
+    void removeCollaboratorByUsername_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        User unauthorisedUser = createUserAndSave("Karen", "Sanders", "ReallyStrongPassword1234");
+        User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.getCollaborators().add(collaborator);
+
+        TaskList savedList = taskListRepository.save(taskList);
+        long taskListId = savedList.getId();
+        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId + "/collaborator/remove")
+                        .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User is not authorised to remove collaborators!"));
+
+
+        // Post-Action verification
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getCollaborators()).hasSize(1);
+    }
 }
