@@ -3,6 +3,7 @@ package com.github.mpalambonisi.syncup.service;
 
 import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
+import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
@@ -103,6 +104,7 @@ public class TaskItemServiceTest {
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
 }
