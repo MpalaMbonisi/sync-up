@@ -427,4 +427,39 @@ public class TaskListIntegrationTest {
         assertThat(retrievedTaskList.get().getCollaborators()).hasSize(2);
     }
 
+    @Test
+    void addCollaboratorsByUsername_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        User unauthorizedUser = new User();
+        unauthorizedUser.setUsername("karensanders");
+        unauthorizedUser.setFirstName("Karen");
+        unauthorizedUser.setLastName("Sanders");
+        unauthorizedUser.setEmail("karensanders@gmail.com");
+        unauthorizedUser.setPassword(encoder.encode("ReallyStrongPassword1234"));
+        userRepository.save(unauthorizedUser);
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+
+        TaskList savedTaskList = taskListRepository.save(taskList);
+        long taskListId = savedTaskList.getId();
+        Set<String> collaboratorsList = new HashSet<>();
+        collaboratorsList.add("johnsmith");
+        AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(collaboratorsList);
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + taskListId + "/collaborator/add")
+                        .with(SecurityMockMvcRequestPostProcessors.user(unauthorizedUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User is not authorised to add collaborators!"));
+
+        // Post-Action Verification
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getCollaborators()).isEmpty();
+    }
+
 }
