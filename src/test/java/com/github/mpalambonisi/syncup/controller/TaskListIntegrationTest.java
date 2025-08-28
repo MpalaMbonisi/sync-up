@@ -650,4 +650,18 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.message").value("User is not authorised to retrieve all collaborators!"));
     }
 
+    @Test
+    void getAllCollaborators_withNonexistentTaskListId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        long invalidListId = 999L;
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + invalidListId + "/collaborator/all")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("List not found!"));
+    }
+
 }
