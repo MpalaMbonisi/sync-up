@@ -664,4 +664,17 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.message").value("List not found!"));
     }
 
+    @Test
+    void getAllCollaborators_withEmptyCollaboratorsList_shouldReturn200() throws Exception{
+        // Arrange
+        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List");
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + taskListId + "/collaborator/all")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
 }
