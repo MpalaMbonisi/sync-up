@@ -572,27 +572,29 @@ public class TaskListIntegrationTest {
         assertThat(retrievedTaskList.isEmpty()).isTrue();
     }
 
-    @Test
-    void removeCollaboratorByUsername_withEmptyUsername_shouldReturn400BadRequest() throws Exception{
+    @ParameterizedTest
+    @WithMockUser("mbonisimpala")
+    @CsvSource({"'', 'Collaborator username cannot be empty.'", "'   ', 'Collaborator username cannot be blank.'"})
+    void removeCollaboratorByUsername_withEmptyOrBlankUsername_shouldReturn400BadRequest(String invalidUsername, String expectedMessage) throws Exception{
         // Arrange
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
         TaskList taskList = new TaskList();
         taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
         taskList.getCollaborators().add(collaborator);
 
         TaskList savedTaskList = taskListRepository.save(taskList);
         long taskListId = savedTaskList.getId();
 
-        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("");
+        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO(invalidUsername);
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId + "/collaborator/remove")
-                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").isArray())
-                .andExpect(jsonPath("$.message").value("Collaborator username cannot be empty."));
+                .andExpect(jsonPath("$.message", hasItems(expectedMessage)));
 
         // Post-Action Verification
         Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
