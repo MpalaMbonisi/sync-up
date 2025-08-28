@@ -2,6 +2,7 @@ package com.github.mpalambonisi.syncup.service;
 
 
 import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
+import com.github.mpalambonisi.syncup.dto.TaskItemStatusDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.model.TaskItem;
@@ -51,6 +52,15 @@ public class TaskItemServiceTest {
         taskList.setOwner(ownerUser);
         if (collaborator != null) taskList.getCollaborators().add(collaborator);
         return taskList;
+    }
+
+    private TaskItem createTaskItem(long id, TaskList taskList){
+        TaskItem taskItem = new TaskItem();
+        taskItem.setId(id);
+        taskItem.setCompleted(false);
+        taskItem.setDescription("1kg Banana");
+        taskItem.setTaskList(taskList);
+        return taskItem;
     }
 
     @Test
