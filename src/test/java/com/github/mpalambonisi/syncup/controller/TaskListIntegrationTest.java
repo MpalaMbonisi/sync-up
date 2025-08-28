@@ -571,4 +571,33 @@ public class TaskListIntegrationTest {
         Optional<TaskList> retrievedTaskList = taskListRepository.findById(invalidListId);
         assertThat(retrievedTaskList.isEmpty()).isTrue();
     }
+
+    @Test
+    void removeCollaboratorByUsername_withEmptyUsername_shouldReturn400BadRequest() throws Exception{
+        // Arrange
+        User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.getCollaborators().add(collaborator);
+
+        TaskList savedTaskList = taskListRepository.save(taskList);
+        long taskListId = savedTaskList.getId();
+
+        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("");
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId + "/collaborator/remove")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message").value("Collaborator username cannot be empty."));
+
+        // Post-Action Verification
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getCollaborators()).hasSize(1);
+    }
+
 }
