@@ -70,8 +70,8 @@ public class TaskListController {
     }
 
     @GetMapping("/{id}/collaborator/all")
-    public ResponseEntity<HttpStatus> getAllCollaborators(@PathVariable Long id, @AuthenticationPrincipal User currentUser){
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    public ResponseEntity<List<String>> getAllCollaborators(@PathVariable Long id, @AuthenticationPrincipal User currentUser){
+        return ResponseEntity.ok(taskListService.getAllCollaborators(id, currentUser));
     }
 
     private TaskListResponseDTO convertIntoDto(TaskList taskList){
