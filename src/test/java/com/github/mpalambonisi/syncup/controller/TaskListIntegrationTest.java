@@ -463,7 +463,7 @@ public class TaskListIntegrationTest {
     }
 
     @Test
-    void addCollaboratorByUsername_withNonexistentCollaboratorUsername_shouldReturn404NotFound() throws Exception{
+    void addCollaboratorsByUsername_withNonexistentCollaboratorUsername_shouldReturn404NotFound() throws Exception{
         // Arrange
         String invalidUsername = "karensanders"; // non-existent
 
