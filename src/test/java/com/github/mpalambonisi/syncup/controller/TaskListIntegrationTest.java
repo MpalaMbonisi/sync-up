@@ -3,6 +3,7 @@ package com.github.mpalambonisi.syncup.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
+import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
@@ -467,6 +468,31 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Please provide at least one collaborator."));
 
         // Post-Action Verification
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getCollaborators()).isEmpty();
+    }
+
+    @Test
+    void removeCollaboratorByUsername_asOwner_shouldReturn204NoContent() throws Exception{
+        // Arrange
+        User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.getCollaborators().add(collaborator);
+
+        TaskList savedList = taskListRepository.save(taskList);
+        long taskListId = savedList.getId();
+        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId + "/collaborator/remove")
+                .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNoContent());
+
+        // Post-Action verification
         Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
         assertThat(retrievedTaskList.isPresent()).isTrue();
         assertThat(retrievedTaskList.get().getCollaborators()).isEmpty();
