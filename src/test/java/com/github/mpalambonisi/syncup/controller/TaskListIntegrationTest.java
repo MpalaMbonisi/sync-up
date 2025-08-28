@@ -547,7 +547,7 @@ public class TaskListIntegrationTest {
         // Post-Action verification
         Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
         assertThat(retrievedTaskList.isPresent()).isTrue();
-        assertThat(retrievedTaskList.get().getCollaborators()).hasSize(1);
+        assertThat(retrievedTaskList.get().getCollaborators()).isEmpty();
     }
 
     @Test
