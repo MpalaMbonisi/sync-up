@@ -11,12 +11,12 @@ import org.springframework.stereotype.Service;
 public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
-    public TaskItem saveTask(String listId, TaskItemCreateDTO dto, User user) {
+    public TaskItem saveTask(long listId, TaskItemCreateDTO dto, User user) {
         return null;
     }
 
     @Override
-    public TaskItem updateTask(String listId, String taskId, TaskItemStatusDTO dto, User user) {
+    public TaskItem updateTask(long listId, String taskId, TaskItemStatusDTO dto, User user) {
         return null;
     }
 }
