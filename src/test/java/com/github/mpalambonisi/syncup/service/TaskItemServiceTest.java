@@ -85,6 +85,40 @@ public class TaskItemServiceTest {
     }
 
     @Test
+    void saveTask_whenUserIsCollaborator_shouldCreateAndReturnTask(){
+        // Arrange
+        User collaborator = new User(3L, "nicolencube", "Nicole", "Ncube",
+                "nicolencube@outlook.com", "VeryStrongPassword1234");
+        TaskItemCreateDTO dto = new TaskItemCreateDTO("1kg Banana");
+        long taskListId = 1L;
+        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", collaborator);
+
+        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> {
+            TaskItem task = invocation.getArgument(0);
+            task.setId(1L); // Simulate DB generating ID
+            return task;
+        });
+
+        // Act
+        TaskItem savedTaskItem = taskItemService.saveTask(taskListId, dto, collaborator);
+
+        // Assert
+        assertThat(savedTaskItem).isNotNull();
+        assertThat(savedTaskItem.getId()).isEqualTo(1L);
+        assertThat(savedTaskItem.getDescription()).isEqualTo("1kg Banana");
+        assertThat(savedTaskItem.isCompleted()).isFalse(); // Default should be false
+        assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
+        assertThat(savedTaskItem.getTaskList().getTitle()).isEqualTo("Grocery Shopping List");
+        assertThat(savedTaskItem.getTaskList().getCollaborators().contains(collaborator)).isTrue();
+
+        // Verify interaction order
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository).save(any(TaskItem.class));
+    }
+
+    @Test
     void saveTask_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
         // Arrange
         User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
