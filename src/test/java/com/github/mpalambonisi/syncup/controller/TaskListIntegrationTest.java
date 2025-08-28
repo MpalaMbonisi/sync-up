@@ -604,4 +604,27 @@ public class TaskListIntegrationTest {
         assertThat(retrievedTaskList.get().getCollaborators()).hasSize(1);
     }
 
+    @Test
+    void getAllCollaborators_asOwner_shouldReturn200() throws Exception{
+        // Arrange
+        User collaborator01 = createUserAndSave("John", "Smith", "StrongPassword1234");
+        User collaborator02 = createUserAndSave("Nicole", "Ncube", "ReallyStrongPassword1234");
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.getCollaborators().add(collaborator01);
+        taskList.getCollaborators().add(collaborator02);
+
+        TaskList savedTaskList = taskListRepository.save(taskList);
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + taskListId + "/collaborator/all")
+                .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$", hasItems("nicolencube", "johnsmith")));
+    }
+
 }
