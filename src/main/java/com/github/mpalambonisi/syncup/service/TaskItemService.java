@@ -8,5 +8,5 @@ import com.github.mpalambonisi.syncup.model.User;
 public interface TaskItemService {
 
     TaskItem saveTask(long listId, TaskItemCreateDTO dto, User user);
-    TaskItem updateTask(long listId, String taskId, TaskItemStatusDTO dto, User user);
+    TaskItem updateTask(long listId, long taskId, TaskItemStatusDTO dto, User user);
 }
