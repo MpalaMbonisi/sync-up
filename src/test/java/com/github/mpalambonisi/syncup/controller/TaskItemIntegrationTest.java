@@ -2,6 +2,7 @@ package com.github.mpalambonisi.syncup.controller;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskItemRepository;
@@ -78,5 +79,13 @@ public class TaskItemIntegrationTest {
         if(collaborator != null) taskList.getCollaborators().add(collaborator);
 
         return taskListRepository.save(taskList);
+    }
+
+    private TaskItem createTaskItemAndSave(String description, TaskList taskList){
+        TaskItem taskItem = new TaskItem();
+        taskItem.setTaskList(taskList);
+        taskItem.setDescription(description);
+        taskItem.setCompleted(false);
+        return taskItemRepository.save(taskItem);
     }
 }
