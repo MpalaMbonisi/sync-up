@@ -273,4 +273,26 @@ public class TaskItemServiceTest {
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
+    @Test
+    void updateTask_withNonExistentTaskItemId_shouldThrowTaskNotFoundException(){
+        // Arrange
+        long taskListId = 1L;
+        long invalidTaskItemId = 999L; // non-existent task item ID
+        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
+        TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
+        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findById(invalidTaskItemId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        TaskNotFoundException exception = Assertions.assertThrows(TaskNotFoundException.class,
+                () -> taskItemService.updateTask(taskListId, invalidTaskItemId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("Task item not found!");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
+        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+    }
+
 }
