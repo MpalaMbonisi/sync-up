@@ -4,6 +4,7 @@ import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskItemStatusDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
+import com.github.mpalambonisi.syncup.exception.TaskNotFoundException;
 import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
@@ -12,6 +13,7 @@ import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.service.TaskItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.SessionAttributes;
 
 import java.util.Optional;
 
@@ -24,14 +26,7 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem saveTask(long listId, TaskItemCreateDTO dto, User user) {
-        TaskList foundList = taskListRepository.findById(listId)
-                .orElseThrow(() -> new ListNotFoundException("List not found!"));
-
-        boolean isOwner = foundList.getOwner().getUsername().equals(user.getUsername());
-        boolean isCollaborator = foundList.getCollaborators().contains(user);
-
-        if(!(isCollaborator || isOwner))
-            throw new AccessDeniedException("User is not authorised to access this list!");
+        TaskList foundList = checkListAvailabilityAndAccess(listId, user);
 
         TaskItem taskItem = new TaskItem();
         taskItem.setDescription(dto.getDescription().trim());
@@ -43,6 +38,30 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem updateTask(long listId, long taskId, TaskItemStatusDTO dto, User user) {
-        return null;
+        TaskList foundList = checkListAvailabilityAndAccess(listId, user);
+
+        TaskItem foundTaskItem = taskItemRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
+
+        // Security Check: Verify the task belongs to the specified list
+        if(!foundTaskItem.getTaskList().getId().equals(listId)){
+            throw new AccessDeniedException("Task does not belong to the specified list!");
+        }
+
+        foundTaskItem.setCompleted(dto.isComplete());
+        return taskItemRepository.save(foundTaskItem);
+    }
+
+    private TaskList checkListAvailabilityAndAccess(long id, User user){
+        TaskList foundList = taskListRepository.findById(id)
+                .orElseThrow(() -> new ListNotFoundException("List not found!"));
+
+        boolean isOwner = foundList.getOwner().getUsername().equals(user.getUsername());
+        boolean isCollaborator = foundList.getCollaborators().contains(user);
+
+        if(!(isCollaborator || isOwner))
+            throw new AccessDeniedException("User is not authorised to access this list!");
+
+        return foundList;
     }
 }
