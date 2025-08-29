@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskItemRepository;
+import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +29,8 @@ public class TaskItemIntegrationTest {
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private TaskListRepository taskListRepository;
     @Autowired
     private TaskItemRepository taskItemRepository;
     @Autowired
@@ -68,4 +71,12 @@ public class TaskItemIntegrationTest {
         return userRepository.save(user);
     }
 
+    private TaskList createTaskListAndSave(String title, User collaborator){
+        TaskList taskList = new TaskList();
+        taskList.setTitle(title);
+        taskList.setOwner(ownerUser);
+        if(collaborator != null) taskList.getCollaborators().add(collaborator);
+
+        return taskListRepository.save(taskList);
+    }
 }
