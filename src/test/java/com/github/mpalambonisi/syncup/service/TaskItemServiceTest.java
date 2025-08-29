@@ -5,6 +5,7 @@ import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskItemStatusDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
+import com.github.mpalambonisi.syncup.exception.TaskNotFoundException;
 import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
@@ -167,6 +168,34 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(invalidTaskListId);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+    }
+
+    @Test
+    void updateTask_whenUserIsOwner_shouldUpdateAndReturnTask(){
+        // Arrange
+        long taskListId = 1L, taskItemId = 1L;
+        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
+        TaskItem taskItem = createTaskItem(taskItemId, taskList);
+        TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
+
+        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
+        when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TaskItem savedTaskItem = taskItemService.updateTask(taskListId, taskItemId, dto, ownerUser);
+
+        // Assert
+        assertThat(savedTaskItem).isNotNull();
+        assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
+        assertThat(savedTaskItem.getDescription()).isEqualTo(taskItem.getDescription());
+        assertThat(savedTaskItem.isCompleted()).isTrue();
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository).findById(taskItemId);
+        inOrder.verify(taskItemRepository).save(any(TaskItem.class));
     }
 
 }
