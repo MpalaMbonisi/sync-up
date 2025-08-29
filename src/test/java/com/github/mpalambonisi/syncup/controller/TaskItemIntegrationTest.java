@@ -2,6 +2,7 @@ package com.github.mpalambonisi.syncup.controller;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskItemRepository;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
@@ -55,4 +56,16 @@ public class TaskItemIntegrationTest {
         ownerUser.setPassword(encoder.encode("StrongPassword1234"));
         userRepository.save(ownerUser);
     }
+
+    private User createUserAndSave(String firstName, String lastName, String password){
+        String username = (firstName + lastName).toLowerCase();
+        User user = new User();
+        user.setUsername(username);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(username + "@outlook.com");
+        user.setPassword(encoder.encode(password));
+        return userRepository.save(user);
+    }
+
 }
