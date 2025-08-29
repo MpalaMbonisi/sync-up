@@ -253,4 +253,24 @@ public class TaskItemServiceTest {
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
+    @Test
+    void updateTask_withNonExistentTaskList_shouldThrowListNotFoundException(){
+        // Arrange
+        long invalidTaskListId = 999L; // non-existent ID
+        long taskItemId = 1L; // assume it exists
+        TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
+        when(taskListRepository.findById(invalidTaskListId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
+                () -> taskItemService.updateTask(invalidTaskListId, taskItemId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("List not found!");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(invalidTaskListId);
+        inOrder.verify(taskItemRepository, never()).findById(taskItemId);
+        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+    }
+
 }
