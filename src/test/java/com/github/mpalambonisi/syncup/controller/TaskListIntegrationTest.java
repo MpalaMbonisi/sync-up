@@ -496,6 +496,29 @@ public class TaskListIntegrationTest {
     }
 
     @Test
+    void addCollaboratorsByUsername_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
+        User collaborator01 = createUserAndSave("John", "Smith", "VeryStrongPassword1234");
+        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List");
+        long taskListId = savedTaskList.getId();
+
+        Set<String> collaboratorsList = new HashSet<>();
+        collaboratorsList.add(collaborator01.getUsername());
+        AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(collaboratorsList);
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + taskListId + "/collaborator/add")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+
+        // Post-Action Verification
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getCollaborators()).isEmpty();
+    }
+
+    @Test
     void removeCollaboratorByUsername_asOwner_shouldReturn204NoContent() throws Exception{
         // Arrange
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
