@@ -36,12 +36,14 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> authenticateUser(@Valid @RequestBody AuthRequestDTO dto){
+        String normalisedUsername = dto.getUsername().toLowerCase().trim();
+
         // 1. Authenticate the user using the AuthenticationManager
         authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
+                new UsernamePasswordAuthenticationToken(normalisedUsername, dto.getPassword()));
 
         // 2. If authentication is successful, find the user to generate a token
-        var user = userRepository.findByUsername(dto.getUsername())
+        var user = userRepository.findByUsername(normalisedUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("Username does not exist."));
 
         // 3. Generate the JWT for the found user
