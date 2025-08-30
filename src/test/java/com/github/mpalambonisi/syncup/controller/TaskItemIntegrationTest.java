@@ -4,7 +4,6 @@ package com.github.mpalambonisi.syncup.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskItemStatusDTO;
-import com.github.mpalambonisi.syncup.dto.response.TaskListResponseDTO;
 import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
@@ -30,8 +29,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -359,5 +356,34 @@ public class TaskItemIntegrationTest {
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
         assertThat(retrievedTaskItem.isPresent()).isTrue();
         assertThat(retrievedTaskItem.get().isCompleted()).isFalse();
+    }
+
+    @Test
+    void updateTask_withBlankStatus_shouldReturn400BadRequest() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", null),
+                ownerUser,
+                null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave("Baggy Jeans",savedTaskList), savedTaskList);
+
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message", hasItems("Task status completed cannot be blank.")));
+
+        // Post-Action verification
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().isCompleted()).isFalse();
+
     }
 }
