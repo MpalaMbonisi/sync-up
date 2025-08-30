@@ -3,6 +3,7 @@ package com.github.mpalambonisi.syncup.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
+import com.github.mpalambonisi.syncup.dto.response.TaskListResponseDTO;
 import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
@@ -12,11 +13,14 @@ import com.github.mpalambonisi.syncup.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -30,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.core.IsIterableContaining.hasItems;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -189,6 +194,32 @@ public class TaskItemIntegrationTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        assertThat(countAfter).isEqualTo(0);
+    }
+
+    @ParameterizedTest
+    @WithMockUser
+    @CsvSource({"'', 'Task Description cannot be empty.'", "'   ', 'Task Description cannot be blank.'"})
+    void createTask_withEmptyOrBlankDescription_shouldReturn400BadRequest(String invalidDescription, String expectedMessage) throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", null),
+                ownerUser,
+                null);
+
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + taskListId + "/task/create")
+                .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new TaskItemCreateDTO(invalidDescription))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message", hasItems(expectedMessage)));
 
         // Post-Action verification
         long countAfter = taskItemRepository.count();
