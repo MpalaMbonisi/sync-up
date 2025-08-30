@@ -15,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -59,7 +60,9 @@ public class TaskListController {
     @PostMapping("/{id}/collaborator/add")
     public ResponseEntity<List<String>> addCollaboratorsByUsername(@PathVariable Long id,@Valid @RequestBody AddCollaboratorsRequestDTO dto,
                                                        @AuthenticationPrincipal User currentUser){
-        return ResponseEntity.ok(taskListService.addCollaboratorsByUsername(id, dto, currentUser));
+        Set<User> collaboratorSet = taskListService.addCollaboratorsByUsername(id, dto, currentUser);
+        List<String> collaboratorUsernames = collaboratorSet.stream().map(User::getUsername).toList();
+        return ResponseEntity.ok(collaboratorUsernames);
     }
 
     @DeleteMapping("/{id}/collaborator/remove")
@@ -71,7 +74,9 @@ public class TaskListController {
 
     @GetMapping("/{id}/collaborator/all")
     public ResponseEntity<List<String>> getAllCollaborators(@PathVariable Long id, @AuthenticationPrincipal User currentUser){
-        return ResponseEntity.ok(taskListService.getAllCollaborators(id, currentUser));
+        Set<User> collaboratorsSet = taskListService.getAllCollaborators(id, currentUser);
+        List<String> collaboratorUsernames = collaboratorsSet.stream().map(User::getUsername).toList();
+        return ResponseEntity.ok(collaboratorUsernames);
     }
 
     private TaskListResponseDTO convertIntoDto(TaskList taskList){
