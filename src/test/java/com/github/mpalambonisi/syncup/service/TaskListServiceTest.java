@@ -309,16 +309,17 @@ public class TaskListServiceTest {
         AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(usernames);
 
         when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.save(taskList)).thenReturn(taskList);
         when(userRepository.findByUsername(collaborator01.getUsername())).thenReturn(Optional.of(collaborator01));
         when(userRepository.findByUsername(collaborator02.getUsername())).thenReturn(Optional.of(collaborator02));
 
         // Act
-        List<String> savedCollaborators = taskListService.addCollaboratorsByUsername(taskListId, dto, ownerUser);
+        Set<User> savedCollaborators = taskListService.addCollaboratorsByUsername(taskListId, dto, ownerUser);
 
         // Assert
         assertThat(savedCollaborators)
                         .hasSize(2)
-                        .containsExactlyInAnyOrder("johnsmith", "nicolencube");
+                        .containsExactlyInAnyOrder(collaborator01, collaborator02);
 
         // Verify
         InOrder inOrder = inOrder(taskListRepo, userRepository);
@@ -530,12 +531,12 @@ public class TaskListServiceTest {
         when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
 
         // Act
-        List<String> retrievedList = taskListService.getAllCollaborators(taskListId, ownerUser);
+        Set<User> retrievedList = taskListService.getAllCollaborators(taskListId, ownerUser);
 
         // Assert
         assertThat(retrievedList)
                 .hasSize(2)
-                .containsExactlyInAnyOrder("johnsmith", "nicolencube");
+                .containsExactlyInAnyOrder(collaborators.get(0), collaborators.get(1));
 
         // Verify
         verify(taskListRepo, times(1)).findById(taskListId);
@@ -600,7 +601,7 @@ public class TaskListServiceTest {
         when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
 
         // Act
-        List<String> retrievedList = taskListService.getAllCollaborators(taskListId, ownerUser);
+        Set<User> retrievedList = taskListService.getAllCollaborators(taskListId, ownerUser);
 
         // Assert
         assertThat(retrievedList).isEmpty();
