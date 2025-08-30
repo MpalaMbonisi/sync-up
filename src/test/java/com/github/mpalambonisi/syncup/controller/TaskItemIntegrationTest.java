@@ -87,9 +87,9 @@ public class TaskItemIntegrationTest {
         return userRepository.save(user);
     }
 
-    private TaskList createTaskListAndSave(String title, User collaborator){
+    private TaskList createTaskListAndSave(User collaborator){
         TaskList taskList = new TaskList();
-        taskList.setTitle(title);
+        taskList.setTitle("Shopping List");
         taskList.setOwner(ownerUser);
         if(collaborator != null) taskList.getCollaborators().add(collaborator);
 
@@ -128,7 +128,7 @@ public class TaskItemIntegrationTest {
         TaskItemCreateDTO dto = new TaskItemCreateDTO("Nike shoes");
 
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", null),
+                createTaskListAndSave(null),
                 ownerUser,
                 null);
 
@@ -158,7 +158,7 @@ public class TaskItemIntegrationTest {
         TaskItemCreateDTO dto = new TaskItemCreateDTO("Nike shoes");
 
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", collaborator),
+                createTaskListAndSave(collaborator),
                 ownerUser,
                 collaborator);
 
@@ -187,7 +187,7 @@ public class TaskItemIntegrationTest {
         TaskItemCreateDTO dto = new TaskItemCreateDTO("Nike shoes");
 
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", null),
+                createTaskListAndSave(null),
                 ownerUser,
                 null);
 
@@ -212,7 +212,7 @@ public class TaskItemIntegrationTest {
     void createTask_withEmptyOrBlankDescription_shouldReturn400BadRequest(String invalidDescription, String expectedMessage) throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", null),
+                createTaskListAndSave(null),
                 ownerUser,
                 null);
 
@@ -256,7 +256,7 @@ public class TaskItemIntegrationTest {
         // Arrange
 
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", null),
+                createTaskListAndSave(null),
                 ownerUser,
                 null);
 
@@ -274,7 +274,7 @@ public class TaskItemIntegrationTest {
     void updateTask_asOwner_shouldReturn200OkAndTaskItemResponseDTO() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", null),
+                createTaskListAndSave(null),
                 ownerUser,
                 null);
         TaskItem savedTaskItem = assertValidTaskItemCreation(
@@ -306,7 +306,7 @@ public class TaskItemIntegrationTest {
         User collaborator = createUserAndSave("John", "Smith", encoder.encode("ReallyStrongPassword1234"));
 
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", collaborator),
+                createTaskListAndSave(collaborator),
                 ownerUser,
                 null);
         TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave(savedTaskList), savedTaskList);
@@ -337,7 +337,7 @@ public class TaskItemIntegrationTest {
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", encoder.encode("VeryStrongPassword1234"));
 
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", null),
+                createTaskListAndSave(null),
                 ownerUser,
                 null);
         TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave(savedTaskList), savedTaskList);
@@ -364,7 +364,7 @@ public class TaskItemIntegrationTest {
     void updateTask_withBlankStatus_shouldReturn400BadRequest() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", null),
+                createTaskListAndSave(null),
                 ownerUser,
                 null);
         TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave(savedTaskList), savedTaskList);
@@ -392,7 +392,7 @@ public class TaskItemIntegrationTest {
     void updateTask_withNonExistentTaskListId_shouldReturn404NotFound() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", null),
+                createTaskListAndSave(null),
                 ownerUser,
                 null);
         TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave(savedTaskList), savedTaskList);
@@ -420,7 +420,7 @@ public class TaskItemIntegrationTest {
     @Test
     void updateTask_withNonExistentTaskItemId_shouldReturn404NotFound() throws Exception{
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", null),
+                createTaskListAndSave(null),
                 ownerUser,
                 null);
 
@@ -443,7 +443,7 @@ public class TaskItemIntegrationTest {
     void updateTask_whenTaskDoesNotBelongToList_shouldReturn403Forbidden() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave("Shopping List", null),
+                createTaskListAndSave(null),
                 ownerUser,
                 null);
         TaskItem savedTaskItem = assertValidTaskItemCreation(
