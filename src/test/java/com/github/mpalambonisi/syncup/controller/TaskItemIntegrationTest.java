@@ -113,11 +113,11 @@ public class TaskItemIntegrationTest {
         return savedTaskList;
     }
 
-    private TaskItem assertValidTaskItemCreation(TaskItem savedTaskItem, TaskList taskList){
+    private TaskItem assertValidTaskItemCreation(TaskItem savedTaskItem, TaskList expectTaskList){
         assertThat(savedTaskItem).isNotNull();
         assertThat(savedTaskItem.getDescription()).isEqualTo("Baggy Jeans");
         assertThat(savedTaskItem.isCompleted()).isFalse();
-        assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
+        assertThat(savedTaskItem.getTaskList()).isEqualTo(expectTaskList);
         return savedTaskItem;
     }
 
