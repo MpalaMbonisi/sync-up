@@ -300,4 +300,35 @@ public class TaskItemIntegrationTest {
         assertThat(retrievedTaskItem.isPresent()).isTrue();
         assertThat(retrievedTaskItem.get().isCompleted()).isTrue();
     }
+
+    @Test
+    void updateTask_asCollaborator_shouldReturn200OkAndTaskItemResponseDTO() throws Exception{
+        // Arrange
+        User collaborator = createUserAndSave("John", "Smith", encoder.encode("ReallyStrongPassword1234"));
+
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", collaborator),
+                ownerUser,
+                null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave("Baggy Jeans",savedTaskList), savedTaskList);
+
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(collaborator))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.description").value("Nike shoes"))
+                .andExpect(jsonPath("$.taskListTitle").value("Shopping List"))
+                .andExpect(jsonPath("$.completed").value(true));
+
+        // Post-Action verification
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().isCompleted()).isTrue();
+    }
 }
