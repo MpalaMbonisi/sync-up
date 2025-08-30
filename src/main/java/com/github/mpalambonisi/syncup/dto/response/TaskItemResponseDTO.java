@@ -13,6 +13,6 @@ public class TaskItemResponseDTO {
 
     private long id;
     private String description;
-    private boolean isCompleted;
+    private boolean completed;
     private String taskListTitle;
 }
