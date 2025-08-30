@@ -23,21 +23,21 @@ public class TaskItemController {
     public ResponseEntity<TaskItemResponseDTO> createTask(@PathVariable Long listId, @Valid @RequestBody TaskItemCreateDTO dto,
                                                  @AuthenticationPrincipal User currentUser){
         TaskItem taskItem = taskItemService.saveTask(listId, dto, currentUser);
-
         return new ResponseEntity<>(convertToResponseDTO(taskItem), HttpStatus.CREATED);
     }
 
     @PatchMapping("/list/{listId}/task/{taskId}/update")
-    public ResponseEntity<HttpStatus> updateTaskStatus(@PathVariable Long listId, @PathVariable Long taskId,
+    public ResponseEntity<TaskItemResponseDTO> updateTaskStatus(@PathVariable Long listId, @PathVariable Long taskId,
                                                        @Valid @RequestBody TaskItemStatusDTO dto, @AuthenticationPrincipal User currentUser){
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        TaskItem taskItem = taskItemService.updateTask(listId, taskId, dto, currentUser);
+        return ResponseEntity.ok(convertToResponseDTO(taskItem));
     }
 
     private TaskItemResponseDTO convertToResponseDTO(TaskItem taskItem){
         return TaskItemResponseDTO.builder()
                 .id(taskItem.getId())
                 .description(taskItem.getDescription())
-                .isCompleted(taskItem.isCompleted())
+                .completed(taskItem.getCompleted())
                 .taskListTitle(taskItem.getTaskList().getTitle())
                 .build();
     }
