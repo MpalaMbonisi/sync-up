@@ -96,10 +96,10 @@ public class TaskItemIntegrationTest {
         return taskListRepository.save(taskList);
     }
 
-    private TaskItem createTaskItemAndSave(String description, TaskList taskList){
+    private TaskItem createTaskItemAndSave(TaskList taskList){
         TaskItem taskItem = new TaskItem();
         taskItem.setTaskList(taskList);
-        taskItem.setDescription(description);
+        taskItem.setDescription("Baggy Jeans");
         taskItem.setCompleted(false);
         return taskItemRepository.save(taskItem);
     }
@@ -278,7 +278,7 @@ public class TaskItemIntegrationTest {
                 ownerUser,
                 null);
         TaskItem savedTaskItem = assertValidTaskItemCreation(
-                createTaskItemAndSave("Baggy Jeans",savedTaskList), savedTaskList);
+                createTaskItemAndSave(savedTaskList), savedTaskList);
 
         long taskListId = savedTaskList.getId();
         long taskItemId = savedTaskItem.getId();
@@ -309,7 +309,7 @@ public class TaskItemIntegrationTest {
                 createTaskListAndSave("Shopping List", collaborator),
                 ownerUser,
                 null);
-        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave("Baggy Jeans",savedTaskList), savedTaskList);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave(savedTaskList), savedTaskList);
 
         long taskListId = savedTaskList.getId();
         long taskItemId = savedTaskItem.getId();
@@ -340,7 +340,7 @@ public class TaskItemIntegrationTest {
                 createTaskListAndSave("Shopping List", null),
                 ownerUser,
                 null);
-        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave("Baggy Jeans",savedTaskList), savedTaskList);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave(savedTaskList), savedTaskList);
 
         long taskListId = savedTaskList.getId();
         long taskItemId = savedTaskItem.getId();
@@ -367,7 +367,7 @@ public class TaskItemIntegrationTest {
                 createTaskListAndSave("Shopping List", null),
                 ownerUser,
                 null);
-        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave("Baggy Jeans",savedTaskList), savedTaskList);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave(savedTaskList), savedTaskList);
 
         long taskListId = savedTaskList.getId();
         long taskItemId = savedTaskItem.getId();
@@ -395,7 +395,7 @@ public class TaskItemIntegrationTest {
                 createTaskListAndSave("Shopping List", null),
                 ownerUser,
                 null);
-        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave("Baggy Jeans",savedTaskList), savedTaskList);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave(savedTaskList), savedTaskList);
 
         long invalidTaskListId = 999L; // non-existent task ID
         long taskItemId = savedTaskItem.getId();
@@ -447,7 +447,7 @@ public class TaskItemIntegrationTest {
                 ownerUser,
                 null);
         TaskItem savedTaskItem = assertValidTaskItemCreation(
-                createTaskItemAndSave("Baggy Jeans",null), null);
+                createTaskItemAndSave(null), null);
 
         long taskListId = savedTaskList.getId();
         long taskItemId = savedTaskItem.getId(); // this does not belong to saved Task List
