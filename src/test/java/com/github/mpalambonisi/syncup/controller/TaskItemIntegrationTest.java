@@ -436,4 +436,33 @@ public class TaskItemIntegrationTest {
                 .andExpect(jsonPath("$.message.length()").value(1))
                 .andExpect(jsonPath("$.message").value("Task item not found!"));
     }
+
+    @Test
+    void updateTask_whenTaskDoesNotBelongToList_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", null),
+                ownerUser,
+                null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave("Baggy Jeans",null), null);
+
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId(); // this does not belong to saved Task List
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Task does not belong to the specified list"));
+
+        // Post-Action verification
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().isCompleted()).isFalse();
+
+    }
 }
