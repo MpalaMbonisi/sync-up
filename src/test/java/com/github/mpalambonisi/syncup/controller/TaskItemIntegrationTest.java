@@ -202,7 +202,7 @@ public class TaskItemIntegrationTest {
 
     @ParameterizedTest
     @WithMockUser(username = "mbonisimpala")
-    @CsvSource({"'', 'Task Description cannot be empty.'", "'   ', 'Task Description cannot be blank.'"})
+    @CsvSource({"'', 'Task description cannot be empty.'", "'   ', 'Task description cannot be blank.'"})
     void createTask_withEmptyOrBlankDescription_shouldReturn400BadRequest(String invalidDescription, String expectedMessage) throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
