@@ -94,7 +94,7 @@ public class TaskListServiceImpl implements TaskListService {
     }
 
     @Override
-    public TaskList removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user) {
+    public void removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user) {
         TaskList foundTask = taskListRepository.findById(id)
                 .orElseThrow(() -> new ListNotFoundException("List not found!"));
 
@@ -106,7 +106,7 @@ public class TaskListServiceImpl implements TaskListService {
 
         foundTask.getCollaborators().remove(collaborator);
 
-        return taskListRepository.save(foundTask);
+        taskListRepository.save(foundTask);
     }
 
     @Override
