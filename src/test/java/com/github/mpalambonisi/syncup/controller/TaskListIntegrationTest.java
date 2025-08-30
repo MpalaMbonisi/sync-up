@@ -120,7 +120,6 @@ public class TaskListIntegrationTest {
     @Test
     void createList_asUnauthenticatedUser_shouldReturn401Unauthorized() throws Exception{
         // Arrange
-
         TaskListCreateDTO dto = TaskListCreateDTO.builder()
                 .title("Grocery Shopping List")
                 .build();
@@ -266,6 +265,17 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.message.length()").value(1))
                 .andExpect(jsonPath("$.message").value("List not found!"));
 
+    }
+
+    @Test
+    void getListById_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
+        // Arrange
+        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List");
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + savedTaskList.getId())) // skip authentication
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
     }
 
     @Test
