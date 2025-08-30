@@ -9,7 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TaskItemStatusDTO {
-
-    @NotBlank(message = "Task status isComplete cannot be blank.")
     private boolean completed;
 }

@@ -48,7 +48,7 @@ public class TaskItemServiceImpl implements TaskItemService {
             throw new AccessDeniedException("Task does not belong to the specified list!");
         }
 
-        foundTaskItem.setCompleted(dto.isComplete());
+        foundTaskItem.setCompleted(dto.isCompleted());
         return taskItemRepository.save(foundTaskItem);
     }
 

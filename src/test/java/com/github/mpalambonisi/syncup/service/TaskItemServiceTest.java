@@ -85,7 +85,7 @@ public class TaskItemServiceTest {
         assertThat(savedTaskItem).isNotNull();
         assertThat(savedTaskItem.getId()).isEqualTo(1L);
         assertThat(savedTaskItem.getDescription()).isEqualTo("1kg Banana");
-        assertThat(savedTaskItem.isCompleted()).isFalse(); // Default should be false
+        assertThat(savedTaskItem.getCompleted()).isFalse(); // Default should be false
         assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
         assertThat(savedTaskItem.getTaskList().getTitle()).isEqualTo("Grocery Shopping List");
 
@@ -118,7 +118,7 @@ public class TaskItemServiceTest {
         assertThat(savedTaskItem).isNotNull();
         assertThat(savedTaskItem.getId()).isEqualTo(1L);
         assertThat(savedTaskItem.getDescription()).isEqualTo("1kg Banana");
-        assertThat(savedTaskItem.isCompleted()).isFalse(); // Default should be false
+        assertThat(savedTaskItem.getCompleted()).isFalse(); // Default should be false
         assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
         assertThat(savedTaskItem.getTaskList().getTitle()).isEqualTo("Grocery Shopping List");
         assertThat(savedTaskItem.getTaskList().getCollaborators().contains(collaborator)).isTrue();
@@ -189,7 +189,7 @@ public class TaskItemServiceTest {
         assertThat(savedTaskItem).isNotNull();
         assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
         assertThat(savedTaskItem.getDescription()).isEqualTo(taskItem.getDescription());
-        assertThat(savedTaskItem.isCompleted()).isTrue();
+        assertThat(savedTaskItem.getCompleted()).isTrue();
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
@@ -220,7 +220,7 @@ public class TaskItemServiceTest {
         assertThat(savedTaskItem).isNotNull();
         assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
         assertThat(savedTaskItem.getDescription()).isEqualTo(taskItem.getDescription());
-        assertThat(savedTaskItem.isCompleted()).isTrue();
+        assertThat(savedTaskItem.getCompleted()).isTrue();
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);

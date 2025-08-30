@@ -15,7 +15,7 @@ public class TaskItem {
     @Column(nullable = false)
     private String description;
     @Column(nullable = false)
-    private boolean isCompleted;
+    private Boolean completed;
     @ManyToOne
     @JoinColumn(name = "tasklist_id", nullable = false)
     private TaskList taskList;

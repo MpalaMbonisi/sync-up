@@ -116,7 +116,7 @@ public class TaskItemIntegrationTest {
     private TaskItem assertValidTaskItemCreation(TaskItem savedTaskItem, TaskList expectedTaskList){
         assertThat(savedTaskItem).isNotNull();
         assertThat(savedTaskItem.getDescription()).isEqualTo("Baggy Jeans");
-        assertThat(savedTaskItem.isCompleted()).isFalse();
+        assertThat(savedTaskItem.getCompleted()).isFalse();
         assertThat(savedTaskItem.getTaskList()).isEqualTo(expectedTaskList);
         return savedTaskItem;
     }
@@ -290,14 +290,14 @@ public class TaskItemIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.description").value("Nike shoes"))
+                .andExpect(jsonPath("$.description").value("Baggy Jeans"))
                 .andExpect(jsonPath("$.taskListTitle").value("Shopping List"))
                 .andExpect(jsonPath("$.completed").value(true));
 
         // Post-Action verification
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
         assertThat(retrievedTaskItem.isPresent()).isTrue();
-        assertThat(retrievedTaskItem.get().isCompleted()).isTrue();
+        assertThat(retrievedTaskItem.get().getCompleted()).isTrue();
     }
 
     @Test
@@ -308,7 +308,7 @@ public class TaskItemIntegrationTest {
         TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave(collaborator),
                 ownerUser,
-                null);
+                collaborator);
         TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave(savedTaskList), savedTaskList);
 
         long taskListId = savedTaskList.getId();
@@ -321,14 +321,14 @@ public class TaskItemIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.description").value("Nike shoes"))
+                .andExpect(jsonPath("$.description").value("Baggy Jeans"))
                 .andExpect(jsonPath("$.taskListTitle").value("Shopping List"))
                 .andExpect(jsonPath("$.completed").value(true));
 
         // Post-Action verification
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
         assertThat(retrievedTaskItem.isPresent()).isTrue();
-        assertThat(retrievedTaskItem.get().isCompleted()).isTrue();
+        assertThat(retrievedTaskItem.get().getCompleted()).isTrue();
     }
 
     @Test
@@ -357,7 +357,7 @@ public class TaskItemIntegrationTest {
         // Post-Action verification
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
         assertThat(retrievedTaskItem.isPresent()).isTrue();
-        assertThat(retrievedTaskItem.get().isCompleted()).isFalse();
+        assertThat(retrievedTaskItem.get().getCompleted()).isFalse();
     }
 
     @Test
@@ -385,7 +385,7 @@ public class TaskItemIntegrationTest {
         // Post-Action verification
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
         assertThat(retrievedTaskItem.isPresent()).isTrue();
-        assertThat(retrievedTaskItem.get().isCompleted()).isFalse();
+        assertThat(retrievedTaskItem.get().getCompleted()).isFalse();
     }
 
     @Test
@@ -414,7 +414,7 @@ public class TaskItemIntegrationTest {
         // Post-Action verification
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
         assertThat(retrievedTaskItem.isPresent()).isTrue();
-        assertThat(retrievedTaskItem.get().isCompleted()).isFalse();
+        assertThat(retrievedTaskItem.get().getCompleted()).isFalse();
     }
 
     @Test
@@ -464,7 +464,7 @@ public class TaskItemIntegrationTest {
         // Post-Action verification
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
         assertThat(retrievedTaskItem.isPresent()).isTrue();
-        assertThat(retrievedTaskItem.get().isCompleted()).isFalse();
+        assertThat(retrievedTaskItem.get().getCompleted()).isFalse();
     }
 
     @Test
