@@ -101,11 +101,12 @@ public class TaskItemIntegrationTest {
         return taskItemRepository.save(taskItem);
     }
 
-    private TaskList assertValidTaskListCreation(TaskList savedTaskList, User expectedUser, String expectedTitle){
+    private TaskList assertValidTaskListCreation(TaskList savedTaskList, User expectedUser, User expectedCollaborator){
         assertThat(savedTaskList).isNotNull();
         assertThat(savedTaskList.getId()).isNotNull();
         assertThat(savedTaskList.getOwner()).isEqualTo(expectedUser);
-        assertThat(savedTaskList.getTitle()).isEqualTo(expectedTitle);
+        assertThat(savedTaskList.getTitle()).isEqualTo("Shopping List");
+        if(expectedCollaborator != null) assertThat(savedTaskList.getCollaborators()).contains(expectedCollaborator);
         return savedTaskList;
     }
 
@@ -118,7 +119,7 @@ public class TaskItemIntegrationTest {
         TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave("Shopping List", null),
                 ownerUser,
-                "Shopping List");
+                null);
 
         long taskListId = savedTaskList.getId();
 
@@ -148,7 +149,7 @@ public class TaskItemIntegrationTest {
         TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave("Shopping List", collaborator),
                 ownerUser,
-                "Shopping List");
+                collaborator);
 
         long taskListId = savedTaskList.getId();
 
