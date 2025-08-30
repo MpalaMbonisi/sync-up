@@ -110,15 +110,13 @@ public class TaskListServiceImpl implements TaskListService {
     }
 
     @Override
-    public List<String> getAllCollaborators(Long id, User user) {
+    public Set<User> getAllCollaborators(Long id, User user) {
         TaskList foundTask = taskListRepository.findById(id)
                 .orElseThrow(() -> new ListNotFoundException("List not found!"));
 
         if (!foundTask.getOwner().getUsername().equals(user.getUsername()))
             throw new AccessDeniedException("User is not authorised to retrieve all collaborators!");
 
-        return foundTask.getCollaborators()
-                .stream()
-                .map(User::getUsername).toList();
+        return foundTask.getCollaborators();
     }
 }
