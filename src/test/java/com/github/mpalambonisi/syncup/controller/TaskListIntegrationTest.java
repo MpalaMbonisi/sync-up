@@ -200,7 +200,8 @@ public class TaskListIntegrationTest {
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/all"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
     }
 
     @Test
