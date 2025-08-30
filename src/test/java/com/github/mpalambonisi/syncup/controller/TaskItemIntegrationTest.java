@@ -108,4 +108,32 @@ public class TaskItemIntegrationTest {
         assertThat(savedTaskList.getTitle()).isEqualTo(expectedTitle);
         return savedTaskList;
     }
+
+    @Test
+    void createTask_asOwner_shouldReturn201CreatedAndTaskItemDTO() throws Exception{
+        // Arrange
+        long countBefore = taskItemRepository.count();
+        TaskItemCreateDTO dto = new TaskItemCreateDTO("Nike shoes");
+
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", null),
+                ownerUser,
+                "Shopping List");
+
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + taskListId + "/task/create")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.description").value("Nike shoes"))
+                .andExpect(jsonPath("$.isCompleted").value("false"))
+                .andExpect(jsonPath("$.taskListTitle").value("Shopping List"));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        assertThat(countAfter).isEqualTo(countBefore + 1);
+    }
 }
