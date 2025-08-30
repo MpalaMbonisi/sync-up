@@ -254,7 +254,7 @@ public class TaskItemServiceTest {
     }
 
     @Test
-    void updateTask_withNonExistentTaskList_shouldThrowListNotFoundException(){
+    void updateTask_withNonExistentTaskListId_shouldThrowListNotFoundException(){
         // Arrange
         long invalidTaskListId = 999L; // non-existent ID
         long taskItemId = 1L; // assume it exists
