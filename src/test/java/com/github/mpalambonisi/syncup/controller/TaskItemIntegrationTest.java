@@ -288,7 +288,7 @@ public class TaskItemIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
+                        .content(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.description").value("Baggy Jeans"))
                 .andExpect(jsonPath("$.taskListTitle").value("Shopping List"))
@@ -319,7 +319,7 @@ public class TaskItemIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(collaborator))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
+                        .content(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.description").value("Baggy Jeans"))
                 .andExpect(jsonPath("$.taskListTitle").value("Shopping List"))
@@ -350,7 +350,7 @@ public class TaskItemIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
+                        .content(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
 
@@ -377,7 +377,7 @@ public class TaskItemIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO())))
+                        .content(objectMapper.writeValueAsString(new TaskItemStatusDTO())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message", hasItems("Task status completed cannot be blank.")));
@@ -405,7 +405,7 @@ public class TaskItemIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO())))
+                        .content(objectMapper.writeValueAsString(new TaskItemStatusDTO())))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
@@ -432,7 +432,7 @@ public class TaskItemIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO())))
+                        .content(objectMapper.writeValueAsString(new TaskItemStatusDTO())))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
@@ -457,7 +457,7 @@ public class TaskItemIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
+                        .content(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("Task does not belong to the specified list"));
 
@@ -484,7 +484,7 @@ public class TaskItemIntegrationTest {
         String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
+                        .content(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
     }
