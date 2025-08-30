@@ -353,6 +353,17 @@ public class TaskListIntegrationTest {
     }
 
     @Test
+    void deleteListById_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
+        // Arrange
+        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List");
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + savedTaskList.getId()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+    }
+
+    @Test
     void addCollaboratorsByUsername_asOwner_shouldReturn200() throws Exception{
         // Arrange
         User collaborator01 = createUserAndSave("John", "Smith", "VeryStrongPassword1234");
