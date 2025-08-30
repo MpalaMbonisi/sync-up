@@ -201,7 +201,7 @@ public class TaskItemIntegrationTest {
     }
 
     @ParameterizedTest
-    @WithMockUser
+    @WithMockUser(username = "mbonisimpala")
     @CsvSource({"'', 'Task Description cannot be empty.'", "'   ', 'Task Description cannot be blank.'"})
     void createTask_withEmptyOrBlankDescription_shouldReturn400BadRequest(String invalidDescription, String expectedMessage) throws Exception{
         // Arrange
@@ -214,7 +214,6 @@ public class TaskItemIntegrationTest {
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.post("/list/" + taskListId + "/task/create")
-                .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new TaskItemCreateDTO(invalidDescription))))
                 .andExpect(status().isBadRequest())
@@ -244,5 +243,24 @@ public class TaskItemIntegrationTest {
         // Post-Action verification
         long countAfter = taskItemRepository.count();
         assertThat(countAfter).isEqualTo(0);
+    }
+
+    @Test
+    void createTask_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
+        // Arrange
+
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", null),
+                ownerUser,
+                null);
+
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + taskListId + "/task/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TaskItemCreateDTO("Nike shoes"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
     }
 }
