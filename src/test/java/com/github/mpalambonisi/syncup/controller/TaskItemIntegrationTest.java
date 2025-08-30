@@ -277,9 +277,11 @@ public class TaskItemIntegrationTest {
                 createTaskListAndSave("Shopping List", null),
                 ownerUser,
                 null);
-        TaskItem savedTaskItem = createTaskItemAndSave("Baggy jeans", savedTaskList);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave("Baggy Jeans",savedTaskList), savedTaskList);
 
-        long taskListId = savedTaskList.getId(), taskItemId = savedTaskItem.getId();
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
 
         // Act & Assert
         String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
