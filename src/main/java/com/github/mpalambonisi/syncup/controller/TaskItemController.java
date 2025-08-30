@@ -2,26 +2,44 @@ package com.github.mpalambonisi.syncup.controller;
 
 import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskItemStatusDTO;
+import com.github.mpalambonisi.syncup.dto.response.TaskItemResponseDTO;
+import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.User;
+import com.github.mpalambonisi.syncup.service.impl.TaskItemServiceImpl;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 public class TaskItemController {
 
+    private final TaskItemServiceImpl taskItemService;
+
     @PostMapping("/list/{listId}/task/create")
-    public ResponseEntity<HttpStatus> createTask(@PathVariable Long listId, @Valid @RequestBody TaskItemCreateDTO dto,
+    public ResponseEntity<TaskItemResponseDTO> createTask(@PathVariable Long listId, @Valid @RequestBody TaskItemCreateDTO dto,
                                                  @AuthenticationPrincipal User currentUser){
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        TaskItem taskItem = taskItemService.saveTask(listId, dto, currentUser);
+
+        return new ResponseEntity<>(convertToResponseDTO(taskItem), HttpStatus.CREATED);
     }
 
     @PatchMapping("/list/{listId}/task/{taskId}/update")
     public ResponseEntity<HttpStatus> updateTaskStatus(@PathVariable Long listId, @PathVariable Long taskId,
                                                        @Valid @RequestBody TaskItemStatusDTO dto, @AuthenticationPrincipal User currentUser){
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    private TaskItemResponseDTO convertToResponseDTO(TaskItem taskItem){
+        return TaskItemResponseDTO.builder()
+                .id(taskItem.getId())
+                .description(taskItem.getDescription())
+                .isCompleted(taskItem.isCompleted())
+                .taskListTitle(taskItem.getTaskList().getTitle())
+                .build();
     }
 
 }
