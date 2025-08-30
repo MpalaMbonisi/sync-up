@@ -747,4 +747,25 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$").isEmpty());
     }
 
+    @Test
+    void getAllCollaborators_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
+        // Arrange
+        User collaborator01 = createUserAndSave("John", "Smith", "StrongPassword1234");
+        User collaborator02 = createUserAndSave("Nicole", "Ncube", "ReallyStrongPassword1234");
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.getCollaborators().add(collaborator01);
+        taskList.getCollaborators().add(collaborator02);
+
+        TaskList savedTaskList = taskListRepository.save(taskList);
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/list/" + taskListId + "/collaborator/all"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+    }
+
 }
