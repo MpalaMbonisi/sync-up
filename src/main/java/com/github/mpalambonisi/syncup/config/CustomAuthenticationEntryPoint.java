@@ -23,7 +23,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-        ErrorResponse errorResponse = new ErrorResponse(List.of("Authentication Failed! Invalid credentials!"));
+        ErrorResponse errorResponse = new ErrorResponse(List.of("User is unauthorised! Authentication Failed!"));
         // Serialise the object to a JSON string and write it to the response body using the PrintWriter
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }

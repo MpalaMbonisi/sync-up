@@ -282,7 +282,7 @@ public class AuthIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
 
         // Post-Action Verification
         long userCountAfter = userRepository.count();

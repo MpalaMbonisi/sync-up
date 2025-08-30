@@ -129,7 +129,7 @@ public class TaskListIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
 
         // Post-Action Verification
         Optional<TaskList> savedList = taskListRepository.findByTitle(dto.getTitle());
@@ -201,7 +201,7 @@ public class TaskListIntegrationTest {
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/all"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
     }
 
     @Test
@@ -276,7 +276,7 @@ public class TaskListIntegrationTest {
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/" + savedTaskList.getId())) // skip authentication
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
     }
 
     @Test
@@ -360,7 +360,7 @@ public class TaskListIntegrationTest {
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + savedTaskList.getId()))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
     }
 
     @Test
@@ -510,7 +510,7 @@ public class TaskListIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
 
         // Post-Action Verification
         Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
@@ -666,7 +666,7 @@ public class TaskListIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
 
         // Post-Action verification
         Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
@@ -765,7 +765,7 @@ public class TaskListIntegrationTest {
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/" + taskListId + "/collaborator/all"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
     }
 
 }

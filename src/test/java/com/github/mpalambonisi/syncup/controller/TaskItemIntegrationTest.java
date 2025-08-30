@@ -267,7 +267,7 @@ public class TaskItemIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new TaskItemCreateDTO("Nike shoes"))))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
     }
 
     @Test
@@ -466,6 +466,6 @@ public class TaskItemIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication Failed! Invalid credentials!"));
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
     }
 }
