@@ -167,4 +167,31 @@ public class TaskItemIntegrationTest {
         long countAfter = taskItemRepository.count();
         assertThat(countAfter).isEqualTo(countBefore + 1);
     }
+
+    @Test
+    void createTask_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        User unauthorisedUser = createUserAndSave("Karen", "Sanders", encoder.encode("VeryStrongPassword"));
+
+        TaskItemCreateDTO dto = new TaskItemCreateDTO("Nike shoes");
+
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", null),
+                ownerUser,
+                null);
+
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + taskListId + "/task/create")
+                        .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        assertThat(countAfter).isEqualTo(0);
+    }
 }
