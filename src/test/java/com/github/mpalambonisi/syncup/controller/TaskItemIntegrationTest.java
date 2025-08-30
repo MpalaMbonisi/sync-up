@@ -3,6 +3,7 @@ package com.github.mpalambonisi.syncup.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
+import com.github.mpalambonisi.syncup.dto.TaskItemStatusDTO;
 import com.github.mpalambonisi.syncup.dto.response.TaskListResponseDTO;
 import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
@@ -113,6 +114,14 @@ public class TaskItemIntegrationTest {
         assertThat(savedTaskList.getTitle()).isEqualTo("Shopping List");
         if(expectedCollaborator != null) assertThat(savedTaskList.getCollaborators()).contains(expectedCollaborator);
         return savedTaskList;
+    }
+
+    private TaskItem assertValidTaskItemCreation(TaskItem savedTaskItem, TaskList taskList){
+        assertThat(savedTaskItem).isNotNull();
+        assertThat(savedTaskItem.getDescription()).isEqualTo("Baggy Jeans");
+        assertThat(savedTaskItem.isCompleted()).isFalse();
+        assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
+        return savedTaskItem;
     }
 
     @Test
