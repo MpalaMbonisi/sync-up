@@ -225,4 +225,24 @@ public class TaskItemIntegrationTest {
         long countAfter = taskItemRepository.count();
         assertThat(countAfter).isEqualTo(0);
     }
+
+    @Test
+    void createTask_withNonExistentListId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        long invalidTaskListId = 999L;
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + invalidTaskListId + "/task/create")
+                .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new TaskItemCreateDTO("Nike shoes"))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("List not found!"));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        assertThat(countAfter).isEqualTo(0);
+    }
 }
