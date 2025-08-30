@@ -287,6 +287,7 @@ public class TaskItemIntegrationTest {
         // Act & Assert
         String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
                 .andExpect(status().isOk())
