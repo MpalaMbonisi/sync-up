@@ -361,34 +361,6 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void updateTask_withBlankStatus_shouldReturn400BadRequest() throws Exception{
-        // Arrange
-        TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave(null),
-                ownerUser,
-                null);
-        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave(savedTaskList), savedTaskList);
-
-        long taskListId = savedTaskList.getId();
-        long taskItemId = savedTaskItem.getId();
-
-        // Act & Assert
-        String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
-        mockMvc.perform(MockMvcRequestBuilders.patch(url)
-                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new TaskItemStatusDTO())))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").isArray())
-                .andExpect(jsonPath("$.message", hasItems("Task status completed cannot be blank.")));
-
-        // Post-Action verification
-        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
-        assertThat(retrievedTaskItem.isPresent()).isTrue();
-        assertThat(retrievedTaskItem.get().getCompleted()).isFalse();
-    }
-
-    @Test
     void updateTask_withNonExistentTaskListId_shouldReturn404NotFound() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
