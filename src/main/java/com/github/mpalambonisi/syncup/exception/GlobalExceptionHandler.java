@@ -22,7 +22,7 @@ import java.util.List;
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler({UsernameNotFoundException.class, ListNotFoundException.class})
+    @ExceptionHandler({UsernameNotFoundException.class, ListNotFoundException.class, TaskNotFoundException.class})
     public ResponseEntity<Object> handleResourceNotFoundException(RuntimeException ex){
         ErrorResponse error = new ErrorResponse(Collections.singletonList(ex.getMessage()));
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
