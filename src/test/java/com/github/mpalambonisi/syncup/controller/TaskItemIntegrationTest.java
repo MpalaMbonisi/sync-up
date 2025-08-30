@@ -384,6 +384,34 @@ public class TaskItemIntegrationTest {
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
         assertThat(retrievedTaskItem.isPresent()).isTrue();
         assertThat(retrievedTaskItem.get().isCompleted()).isFalse();
+    }
 
+    @Test
+    void updateTask_withNonExistentTaskListId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", null),
+                ownerUser,
+                null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave("Baggy Jeans",savedTaskList), savedTaskList);
+
+        long invalidTaskListId = 999L; // non-existent task ID
+        long taskItemId = savedTaskItem.getId();
+
+        // Act & Assert
+        String url = "/list/" + invalidTaskListId + "/task/" + taskItemId + "/update";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO())))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("List not found!"));
+
+        // Post-Action verification
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().isCompleted()).isFalse();
     }
 }
