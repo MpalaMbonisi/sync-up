@@ -118,7 +118,7 @@ public class TaskListIntegrationTest {
     }
 
     @Test
-    void createList_asUnauthorisedUser_shouldReturn401Unauthorized() throws Exception{
+    void createList_asUnauthenticatedUser_shouldReturn401Unauthorized() throws Exception{
         // Arrange
 
         TaskListCreateDTO dto = TaskListCreateDTO.builder()
