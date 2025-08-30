@@ -135,7 +135,7 @@ public class TaskItemIntegrationTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.description").value("Nike shoes"))
-                .andExpect(jsonPath("$.isCompleted").value("false"))
+                .andExpect(jsonPath("$.completed").value("false"))
                 .andExpect(jsonPath("$.taskListTitle").value("Shopping List"));
 
         // Post-Action verification
@@ -165,7 +165,7 @@ public class TaskItemIntegrationTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.description").value("Nike shoes"))
-                .andExpect(jsonPath("$.isCompleted").value("false"))
+                .andExpect(jsonPath("$.completed").value("false"))
                 .andExpect(jsonPath("$.taskListTitle").value("Shopping List"));
 
         // Post-Action verification
