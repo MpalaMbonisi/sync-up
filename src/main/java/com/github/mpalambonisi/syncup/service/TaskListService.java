@@ -6,6 +6,7 @@ import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import java.util.List;
+import java.util.Set;
 
 public interface TaskListService {
 
@@ -13,7 +14,7 @@ public interface TaskListService {
     TaskList saveTaskList(User user, TaskListCreateDTO dto);
     TaskList getListById(Long id, User user);
     void removeListById(Long id, User user);
-    List<String> addCollaboratorsByUsername(Long id, AddCollaboratorsRequestDTO dto, User user);
+    Set<User> addCollaboratorsByUsername(Long id, AddCollaboratorsRequestDTO dto, User user);
     TaskList removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user);
     List<String> getAllCollaborators(Long id, User user);
 }

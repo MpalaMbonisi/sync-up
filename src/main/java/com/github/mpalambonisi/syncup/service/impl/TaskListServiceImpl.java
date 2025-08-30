@@ -15,9 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -77,9 +76,7 @@ public class TaskListServiceImpl implements TaskListService {
     }
 
     @Override
-    public List<String> addCollaboratorsByUsername(Long id, AddCollaboratorsRequestDTO dto, User user) {
-        List<String> collabUserList = new ArrayList<>();
-
+    public Set<User> addCollaboratorsByUsername(Long id, AddCollaboratorsRequestDTO dto, User user) {
         TaskList taskList = taskListRepository.findById(id)
                 .orElseThrow(() -> new ListNotFoundException("List not found!"));
 
@@ -91,10 +88,9 @@ public class TaskListServiceImpl implements TaskListService {
             User collabUser = userRepository.findByUsername(collaborator)
                     .orElseThrow(() -> new UsernameNotFoundException("Collaborator username not found!"));
             taskList.getCollaborators().add(collabUser);
-            collabUserList.add(collaborator);
         }
 
-        return collabUserList;
+        return taskListRepository.save(taskList).getCollaborators();
     }
 
     @Override
