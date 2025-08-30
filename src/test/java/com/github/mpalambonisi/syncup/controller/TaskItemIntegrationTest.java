@@ -331,4 +331,33 @@ public class TaskItemIntegrationTest {
         assertThat(retrievedTaskItem.isPresent()).isTrue();
         assertThat(retrievedTaskItem.get().isCompleted()).isTrue();
     }
+
+    @Test
+    void updateTask_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        User unauthorisedUser = createUserAndSave("Karen", "Sanders", encoder.encode("VeryStrongPassword1234"));
+
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", null),
+                ownerUser,
+                null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(createTaskItemAndSave("Baggy Jeans",savedTaskList), savedTaskList);
+
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
+
+        // Post-Action verification
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().isCompleted()).isFalse();
+    }
 }
