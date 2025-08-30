@@ -418,11 +418,19 @@ public class TaskItemIntegrationTest {
                 createTaskListAndSave(null),
                 ownerUser,
                 null);
-        TaskItem savedTaskItem = assertValidTaskItemCreation(
-                createTaskItemAndSave(null), null);
 
-        long taskListId = savedTaskList.getId();
-        long taskItemId = savedTaskItem.getId(); // this does not belong to saved Task List
+        User differentOwner = createUserAndSave("Nicole", "Ncube", encoder.encode("SuperStrongPassword1234"));
+
+        TaskList differentTaskList = new TaskList();
+        differentTaskList.setTitle("Shopping List");
+        differentTaskList.setOwner(differentOwner);
+        taskListRepository.save(differentTaskList);
+
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(differentTaskList), differentTaskList);
+
+        long taskListId = savedTaskList.getId(); // User has access to this list
+        long taskItemId = savedTaskItem.getId(); // But this task belongs to different list
 
         // Act & Assert
         String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
@@ -431,7 +439,7 @@ public class TaskItemIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Task does not belong to the specified list"));
+                .andExpect(jsonPath("$.message").value("Task does not belong to the specified list!"));
 
         // Post-Action verification
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
