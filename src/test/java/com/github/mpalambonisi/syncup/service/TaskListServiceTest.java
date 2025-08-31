@@ -639,8 +639,39 @@ public class TaskListServiceTest {
 
         // Verify
         InOrder inorder = inOrder(taskListRepo);
-        inorder.verify(taskListRepo, times(1)).findById(id);
-        inorder.verify(taskListRepo, times(1)).findByTitle(updatedTitle);
-        inorder.verify(taskListRepo, times(1)).save(any(TaskList.class));
+        inorder.verify(taskListRepo).findById(id);
+        inorder.verify(taskListRepo).findByTitle(updatedTitle);
+        inorder.verify(taskListRepo).save(any(TaskList.class));
+    }
+
+    @Test
+    void updateTaskListTitle_whenUserIsCollaborator_shouldThrowAccessDeniedException(){
+        // Arrange
+        User collaborator = new User(2L, "johnsmith", "John", "Smith",
+                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
+
+        long id = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.getCollaborators().add(collaborator);
+        taskList.setId(id);
+
+        String updatedTitle = "Shoe wishlist";
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
+
+        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByTitle(updatedTitle)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskListService.updateTaskListTitle(id, dto, collaborator));
+        assertThat(exception.getMessage()).isEqualTo("User not authorised to update task list title!");
+
+        // Verify
+        InOrder inorder = inOrder(taskListRepo);
+        inorder.verify(taskListRepo).findById(id);
+        inorder.verify(taskListRepo).findByTitle(updatedTitle);
+        inorder.verify(taskListRepo, never()).save(any(TaskList.class));
     }
 }
