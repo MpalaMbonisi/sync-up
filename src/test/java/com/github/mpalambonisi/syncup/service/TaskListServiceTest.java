@@ -664,7 +664,6 @@ public class TaskListServiceTest {
         TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
 
         when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
-        when(taskListRepo.findByTitle(updatedTitle)).thenReturn(Optional.empty());
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
@@ -674,7 +673,7 @@ public class TaskListServiceTest {
         // Verify
         InOrder inorder = inOrder(taskListRepo);
         inorder.verify(taskListRepo).findById(id);
-        inorder.verify(taskListRepo).findByTitle(updatedTitle);
+        inorder.verify(taskListRepo, never()).findByTitle(updatedTitle);
         inorder.verify(taskListRepo, never()).save(any(TaskList.class));
     }
 
