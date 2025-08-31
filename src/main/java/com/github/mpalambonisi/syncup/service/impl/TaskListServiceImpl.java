@@ -3,6 +3,7 @@ package com.github.mpalambonisi.syncup.service.impl;
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
+import com.github.mpalambonisi.syncup.dto.request.TaskListTitleUpdateDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.exception.TitleAlreadyExistsException;
@@ -118,5 +119,10 @@ public class TaskListServiceImpl implements TaskListService {
             throw new AccessDeniedException("User is not authorised to retrieve all collaborators!");
 
         return foundTask.getCollaborators();
+    }
+
+    @Override
+    public TaskList updateTaskListTitle(Long id, TaskListTitleUpdateDTO dto, User user) {
+        return null;
     }
 }
