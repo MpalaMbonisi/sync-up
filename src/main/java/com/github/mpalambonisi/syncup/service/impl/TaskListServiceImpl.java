@@ -123,6 +123,17 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public TaskList updateTaskListTitle(Long id, TaskListTitleUpdateDTO dto, User user) {
-        return null;
+        TaskList foundList = taskListRepository.findById(id)
+                .orElseThrow(() -> new ListNotFoundException("List not found!"));
+
+        if (!foundList.getOwner().getUsername().equals(user.getUsername()))
+            throw new AccessDeniedException("User not authorised to update this task list title!");
+
+        if(taskListRepository.findByTitle(dto.getTitle()).isPresent())
+            throw new TitleAlreadyExistsException("Task list title already exists!");
+
+        foundList.setTitle(dto.getTitle().trim());
+
+        return taskListRepository.save(foundList);
     }
 }
