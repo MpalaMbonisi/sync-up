@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -686,7 +688,6 @@ public class TaskListServiceTest {
         taskList.setId(id);
 
         String updatedTitle = "Grocery Shopping List";
-
         TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
 
         when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
@@ -701,6 +702,28 @@ public class TaskListServiceTest {
         InOrder inorder = inOrder(taskListRepo);
         inorder.verify(taskListRepo).findById(id);
         inorder.verify(taskListRepo).findByTitle(updatedTitle);
+        inorder.verify(taskListRepo, never()).save(any(TaskList.class));
+    }
+
+    @Test
+    void updateTaskListTitle_withNonExistentListId_shouldThrowListNotFoundException(){
+        // Arrange
+        long invalidTaskListId = 999L;
+
+        String updatedTitle = "Grocery Shopping List";
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
+
+        when(taskListRepo.findById(invalidTaskListId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
+                () -> taskListService.updateTaskListTitle(invalidTaskListId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("List not found!");
+
+        // Verify
+        InOrder inorder = inOrder(taskListRepo);
+        inorder.verify(taskListRepo).findById(invalidTaskListId);
+        inorder.verify(taskListRepo, never()).findByTitle(updatedTitle);
         inorder.verify(taskListRepo, never()).save(any(TaskList.class));
     }
 }
