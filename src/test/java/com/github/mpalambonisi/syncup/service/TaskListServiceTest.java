@@ -6,6 +6,7 @@ import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
 import com.github.mpalambonisi.syncup.dto.request.TaskListTitleUpdateDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
+import com.github.mpalambonisi.syncup.exception.TitleAlreadyExistsException;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
@@ -667,6 +668,34 @@ public class TaskListServiceTest {
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskListService.updateTaskListTitle(id, dto, collaborator));
         assertThat(exception.getMessage()).isEqualTo("User not authorised to update task list title!");
+
+        // Verify
+        InOrder inorder = inOrder(taskListRepo);
+        inorder.verify(taskListRepo).findById(id);
+        inorder.verify(taskListRepo).findByTitle(updatedTitle);
+        inorder.verify(taskListRepo, never()).save(any(TaskList.class));
+    }
+
+    @Test
+    void updateTaskListTitle_withDuplicateTitle_shouldThrowTitleAlreadyExistsException(){
+        // Arrange
+        long id = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.setId(id);
+
+        String updatedTitle = "Grocery Shopping List";
+
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
+
+        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByTitle(updatedTitle)).thenReturn(Optional.of(taskList));
+
+        // Act & Assert
+        TitleAlreadyExistsException exception = Assertions.assertThrows(TitleAlreadyExistsException.class,
+                () -> taskListService.updateTaskListTitle(id, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("Task list title already exists!");
 
         // Verify
         InOrder inorder = inOrder(taskListRepo);
