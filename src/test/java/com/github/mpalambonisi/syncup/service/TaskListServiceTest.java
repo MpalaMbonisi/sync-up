@@ -669,12 +669,41 @@ public class TaskListServiceTest {
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskListService.updateTaskListTitle(id, dto, collaborator));
-        assertThat(exception.getMessage()).isEqualTo("User not authorised to update task list title!");
+        assertThat(exception.getMessage()).isEqualTo("User not authorised to update this task list title!");
 
         // Verify
         InOrder inorder = inOrder(taskListRepo);
         inorder.verify(taskListRepo).findById(id);
         inorder.verify(taskListRepo).findByTitle(updatedTitle);
+        inorder.verify(taskListRepo, never()).save(any(TaskList.class));
+    }
+
+    @Test
+    void updateTaskListTitle_UserIsUnauthorised_shouldThrowAccessDeniedException(){
+        // Arrange
+        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
+                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
+
+        long id = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.setId(id);
+
+        String updatedTitle = "Shoe wishlist";
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
+
+        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskListService.updateTaskListTitle(id, dto, unauthorisedUser));
+        assertThat(exception.getMessage()).isEqualTo("User not authorised to update this task list title!");
+
+        // Verify
+        InOrder inorder = inOrder(taskListRepo);
+        inorder.verify(taskListRepo).findById(id);
+        inorder.verify(taskListRepo, never()).findByTitle(updatedTitle);
         inorder.verify(taskListRepo, never()).save(any(TaskList.class));
     }
 
