@@ -3,6 +3,7 @@ package com.github.mpalambonisi.syncup.service;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
+import com.github.mpalambonisi.syncup.dto.request.TaskListTitleUpdateDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.model.TaskList;
@@ -609,5 +610,37 @@ public class TaskListServiceTest {
         // Verify
         verify(taskListRepo, times(1)).findById(taskListId);
         verify(taskListRepo, never()).save(any(TaskList.class));
+    }
+
+    @Test
+    void updateTaskListTitle_whenUserIsOwner_shouldUpdateAndReturnTaskList(){
+        // Arrange
+        long id = 1L;
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Grocery Shopping List");
+        taskList.setOwner(ownerUser);
+        taskList.setId(id);
+
+        String updatedTitle = "Shoe wishlist";
+
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
+
+        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByTitle(updatedTitle)).thenReturn(Optional.empty());
+        when(taskListRepo.save(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TaskList resultTaskList = taskListService.updateTaskListTitle(id, dto, ownerUser);
+
+        // Assert
+        assertThat(resultTaskList).isNotNull();
+        assertThat(resultTaskList.getTitle()).isEqualTo(updatedTitle);
+        assertThat(resultTaskList.getOwner().getUsername()).isEqualTo(ownerUser.getUsername());
+
+        // Verify
+        InOrder inorder = inOrder(taskListRepo);
+        inorder.verify(taskListRepo, times(1)).findById(id);
+        inorder.verify(taskListRepo, times(1)).findByTitle(updatedTitle);
+        inorder.verify(taskListRepo, times(1)).save(any(TaskList.class));
     }
 }
