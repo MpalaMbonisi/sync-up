@@ -184,7 +184,7 @@ public class TaskItemServiceTest {
         when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        TaskItem savedTaskItem = taskItemService.updateTask(taskListId, taskItemId, dto, ownerUser);
+        TaskItem savedTaskItem = taskItemService.updateTaskItemStatus(taskListId, taskItemId, dto, ownerUser);
 
         // Assert
         assertThat(savedTaskItem).isNotNull();
@@ -215,7 +215,7 @@ public class TaskItemServiceTest {
         when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        TaskItem savedTaskItem = taskItemService.updateTask(taskListId, taskItemId, dto, collaborator);
+        TaskItem savedTaskItem = taskItemService.updateTaskItemStatus(taskListId, taskItemId, dto, collaborator);
 
         // Assert
         assertThat(savedTaskItem).isNotNull();
@@ -244,7 +244,7 @@ public class TaskItemServiceTest {
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
-                () -> taskItemService.updateTask(taskListId, taskItemId, dto, unauthorisedUser));
+                () -> taskItemService.updateTaskItemStatus(taskListId, taskItemId, dto, unauthorisedUser));
         assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
 
         // Verify
@@ -264,7 +264,7 @@ public class TaskItemServiceTest {
 
         // Act & Assert
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
-                () -> taskItemService.updateTask(invalidTaskListId, taskItemId, dto, ownerUser));
+                () -> taskItemService.updateTaskItemStatus(invalidTaskListId, taskItemId, dto, ownerUser));
         assertThat(exception.getMessage()).isEqualTo("List not found!");
 
         // Verify
@@ -286,7 +286,7 @@ public class TaskItemServiceTest {
 
         // Act & Assert
         TaskNotFoundException exception = Assertions.assertThrows(TaskNotFoundException.class,
-                () -> taskItemService.updateTask(taskListId, invalidTaskItemId, dto, ownerUser));
+                () -> taskItemService.updateTaskItemStatus(taskListId, invalidTaskItemId, dto, ownerUser));
         assertThat(exception.getMessage()).isEqualTo("Task item not found!");
 
         // Verify
@@ -308,7 +308,7 @@ public class TaskItemServiceTest {
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
-                () -> taskItemService.updateTask(1L, 100L, new TaskItemStatusDTO(true), ownerUser));
+                () -> taskItemService.updateTaskItemStatus(1L, 100L, new TaskItemStatusDTO(true), ownerUser));
         assertThat(exception.getMessage()).contains("Task does not belong to the specified list");
 
     }
