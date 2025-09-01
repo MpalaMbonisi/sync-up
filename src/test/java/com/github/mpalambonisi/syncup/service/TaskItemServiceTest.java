@@ -311,4 +311,25 @@ public class TaskItemServiceTest {
         assertThat(exception.getMessage()).contains("Task does not belong to the specified list");
 
     }
+
+    @Test
+    void getTaskItemById_whenUserIsOwner_shouldReturnTask(){
+        // Arrange
+        long taskListId = 1L;
+        long taskItemId = 100L;
+        TaskList taskList = createTaskList(taskListId, "Grocery List", null);
+        TaskItem taskItem = createTaskItem(taskItemId, taskList);
+
+        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
+
+        // Act
+        TaskItem resultTaskItem = taskItemService.getTaskItemById(taskListId, taskItemId, ownerUser);
+
+        // Assert
+        assertThat(resultTaskItem).isNotNull();
+        assertThat(resultTaskItem.getId()).isEqualTo(taskItemId);
+        assertThat(resultTaskItem.getDescription()).isEqualTo(taskItem.getDescription());
+        assertThat(resultTaskItem.getTaskList()).isEqualTo(taskList);
+    }
 }
