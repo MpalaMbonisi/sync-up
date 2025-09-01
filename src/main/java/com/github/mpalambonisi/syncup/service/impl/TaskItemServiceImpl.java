@@ -55,7 +55,18 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem updateTaskItemDescription(long listId, long taskId, TaskItemDescriptionDTO dto, User user) {
-        return null;
+        checkListAvailabilityAndAccess(listId, user);
+
+        TaskItem foundTaskItem = taskItemRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
+
+        if(!foundTaskItem.getTaskList().getId().equals(listId)){
+            throw new AccessDeniedException("Task does not belong to the specified list!");
+        }
+
+        foundTaskItem.setDescription(dto.getDescription());
+
+        return taskItemRepository.save(foundTaskItem);
     }
 
     @Override
