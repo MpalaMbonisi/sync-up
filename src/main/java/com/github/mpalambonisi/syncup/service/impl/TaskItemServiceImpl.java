@@ -2,6 +2,7 @@ package com.github.mpalambonisi.syncup.service.impl;
 
 import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskItemStatusDTO;
+import com.github.mpalambonisi.syncup.dto.request.TaskItemDescriptionDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.exception.TaskNotFoundException;
@@ -50,6 +51,11 @@ public class TaskItemServiceImpl implements TaskItemService {
 
         foundTaskItem.setCompleted(dto.isCompleted());
         return taskItemRepository.save(foundTaskItem);
+    }
+
+    @Override
+    public TaskItem updateTask(long listId, long taskId, TaskItemDescriptionDTO dto, User user) {
+        return null;
     }
 
     private TaskList checkListAvailabilityAndAccess(long id, User user){
