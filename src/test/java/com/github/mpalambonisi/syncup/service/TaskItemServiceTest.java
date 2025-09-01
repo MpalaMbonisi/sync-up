@@ -332,4 +332,28 @@ public class TaskItemServiceTest {
         assertThat(resultTaskItem.getDescription()).isEqualTo(taskItem.getDescription());
         assertThat(resultTaskItem.getTaskList()).isEqualTo(taskList);
     }
+
+    @Test
+    void getTaskItemById_whenUserIsCollaborator_shouldReturnTask(){
+        // Arrange
+        User collaborator = new User(3L, "nicolencube", "Nicole", "Ncube",
+                "nicolencube@outlook.com", "VeryStrongPassword1234");
+
+        long taskListId = 1L;
+        long taskItemId = 100L;
+        TaskList taskList = createTaskList(taskListId, "Grocery List", collaborator);
+        TaskItem taskItem = createTaskItem(taskItemId, taskList);
+
+        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
+
+        // Act
+        TaskItem resultTaskItem = taskItemService.getTaskItemById(taskListId, taskItemId, collaborator);
+
+        // Assert
+        assertThat(resultTaskItem).isNotNull();
+        assertThat(resultTaskItem.getId()).isEqualTo(taskItemId);
+        assertThat(resultTaskItem.getDescription()).isEqualTo(taskItem.getDescription());
+        assertThat(resultTaskItem.getTaskList()).isEqualTo(taskList);
+    }
 }
