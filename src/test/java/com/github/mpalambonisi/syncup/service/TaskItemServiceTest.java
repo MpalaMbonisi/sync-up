@@ -554,7 +554,7 @@ public class TaskItemServiceTest {
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO("Gucci Bag");
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.empty());
 
-        // Act
+        // Act & Assert
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto, ownerUser));
         assertThat(exception.getMessage()).isEqualTo("List not found!");
@@ -563,6 +563,30 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
+        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+    }
+
+    @Test
+    void updateTaskItemDescription_withNonExistentTaskItemId_shouldThrowTaskNotFoundException(){
+        // Arrange
+        long taskListId = 1L;
+        long invalidTaskItemId = 999L; // non-existent task item id
+
+        TaskList taskList = createTaskList(taskListId, "Shopping wishlist", null);
+        TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO("Gucci Bag");
+
+        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findById(invalidTaskItemId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        TaskNotFoundException exception = Assertions.assertThrows(TaskNotFoundException.class,
+                () -> taskItemService.updateTaskItemDescription(taskListId, invalidTaskItemId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("Task item not found!");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 }
