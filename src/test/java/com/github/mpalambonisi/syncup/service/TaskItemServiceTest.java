@@ -589,4 +589,30 @@ public class TaskItemServiceTest {
         inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
+
+    @Test
+    void updateTaskItemDescription_whenTaskDoesNotBelongToList_shouldThrowAccessDeniedException(){
+        long taskListId = 1L;
+        long taskItemId = 100L;
+
+        TaskList allowedList = createTaskList(taskListId, "Allowed List", null);
+        TaskList forbiddenList = createTaskList(2L, "Forbidden List", null);
+        TaskItem taskFromForbiddenList = createTaskItem(taskItemId, forbiddenList);
+
+        TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO("Gucci Bag");
+
+        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(allowedList));
+        when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskFromForbiddenList));
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto, ownerUser));
+        assertThat(exception.getMessage()).contains("Task does not belong to the specified list");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository).findById(taskItemId);
+        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+    }
 }
