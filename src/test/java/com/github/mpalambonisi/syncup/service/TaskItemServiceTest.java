@@ -422,7 +422,7 @@ public class TaskItemServiceTest {
         // Act & Assert
         TaskNotFoundException exception = Assertions.assertThrows(TaskNotFoundException.class,
             () -> taskItemService.getTaskItemById(taskListId, invalidTaskItemId, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("Task not found!");
+        assertThat(exception.getMessage()).isEqualTo("Task item not found!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
