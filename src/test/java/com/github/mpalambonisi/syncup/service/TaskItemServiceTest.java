@@ -517,4 +517,31 @@ public class TaskItemServiceTest {
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).save(any(TaskItem.class));
     }
+
+    @Test
+    void updateTaskItemDescription_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
+        // Arrange
+        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
+                "karensanders@yahoo.com", "ReallyStrongPassword1234");
+
+        long taskListId = 1L;
+        long taskItemId = 100L;
+
+        TaskList taskList = createTaskList(taskListId, "Shopping wishlist", null);
+        createTaskItem(taskItemId, taskList);
+        TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO("Gucci Bag");
+
+        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto, unauthorisedUser));
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!!");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository, never()).findById(taskItemId);
+        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+    }
 }
