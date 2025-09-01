@@ -331,6 +331,11 @@ public class TaskItemServiceTest {
         assertThat(resultTaskItem.getId()).isEqualTo(taskItemId);
         assertThat(resultTaskItem.getDescription()).isEqualTo(taskItem.getDescription());
         assertThat(resultTaskItem.getTaskList()).isEqualTo(taskList);
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository).findById(taskItemId);
     }
 
     @Test
@@ -355,6 +360,11 @@ public class TaskItemServiceTest {
         assertThat(resultTaskItem.getId()).isEqualTo(taskItemId);
         assertThat(resultTaskItem.getDescription()).isEqualTo(taskItem.getDescription());
         assertThat(resultTaskItem.getTaskList()).isEqualTo(taskList);
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository).findById(taskItemId);
     }
 
     @Test
