@@ -54,7 +54,7 @@ public class TaskItemServiceImpl implements TaskItemService {
     }
 
     @Override
-    public TaskItem updateTask(long listId, long taskId, TaskItemDescriptionDTO dto, User user) {
+    public TaskItem updateTaskItemDescription(long listId, long taskId, TaskItemDescriptionDTO dto, User user) {
         return null;
     }
 
