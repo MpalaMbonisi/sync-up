@@ -29,7 +29,7 @@ public class TaskItemController {
     @PatchMapping("/list/{listId}/task/{taskId}/update")
     public ResponseEntity<TaskItemResponseDTO> updateTaskStatus(@PathVariable Long listId, @PathVariable Long taskId,
                                                        @Valid @RequestBody TaskItemStatusDTO dto, @AuthenticationPrincipal User currentUser){
-        TaskItem taskItem = taskItemService.updateTask(listId, taskId, dto, currentUser);
+        TaskItem taskItem = taskItemService.updateTaskItemStatus(listId, taskId, dto, currentUser);
         return ResponseEntity.ok(convertToResponseDTO(taskItem));
     }
 
