@@ -377,14 +377,14 @@ public class TaskItemServiceTest {
         long taskListId = 1L;
         long taskItemId = 100L;
         TaskList taskList = createTaskList(taskListId, "Grocery List", null);
-        TaskItem taskItem = createTaskItem(taskItemId, taskList);
+        createTaskItem(taskItemId, taskList);
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskItemService.getTaskItemById(taskListId, taskItemId, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is unauthorised to get this task item!");
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
@@ -536,7 +536,7 @@ public class TaskItemServiceTest {
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!!");
+        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
@@ -607,7 +607,7 @@ public class TaskItemServiceTest {
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto, ownerUser));
-        assertThat(exception.getMessage()).contains("Task does not belong to the specified list");
+        assertThat(exception.getMessage()).contains("Task does not belong to the specified list!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
