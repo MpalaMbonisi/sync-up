@@ -559,4 +559,25 @@ public class TaskItemIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
     }
+
+    @Test
+    void getTaskItemById_withNonExistentTaskListId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser, null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long taskItemId = savedTaskItem.getId();
+        long invalidTaskListId = 999L; // non-existent task list ID
+
+        // Act & Assert
+        String url = "/list/" + invalidTaskListId + "/task/" + taskItemId;
+        mockMvc.perform(MockMvcRequestBuilders.get(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("List not found!"));
+    }
 }
