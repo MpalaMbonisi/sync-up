@@ -68,7 +68,7 @@ jobs:
         if: always()
         with:
           files: target/surefire-reports/*.xml
-          comment_mode: create new
+          comment_mode: failures
 
   security-scan:
     name: Scan for Vulnerabilities with Trivy
