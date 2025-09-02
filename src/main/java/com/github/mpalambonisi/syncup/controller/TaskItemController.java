@@ -19,6 +19,12 @@ public class TaskItemController {
 
     private final TaskItemServiceImpl taskItemService;
 
+    @GetMapping("/list/{listId}/task/{taskId}")
+    public ResponseEntity<TaskItemResponseDTO> getTaskById(@PathVariable Long listId, @PathVariable Long taskId, @AuthenticationPrincipal User currentUser){
+        TaskItem taskItem = taskItemService.getTaskItemById(listId, taskId, currentUser);
+        return ResponseEntity.ok(convertToResponseDTO(taskItem));
+    }
+
     @PostMapping("/list/{listId}/task/create")
     public ResponseEntity<TaskItemResponseDTO> createTask(@PathVariable Long listId, @Valid @RequestBody TaskItemCreateDTO dto,
                                                  @AuthenticationPrincipal User currentUser){
