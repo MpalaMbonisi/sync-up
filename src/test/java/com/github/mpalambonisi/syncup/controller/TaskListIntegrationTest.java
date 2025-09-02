@@ -939,4 +939,33 @@ public class TaskListIntegrationTest {
         assertThat(retrievedTaskList.get().getTitle()).isEqualTo(originalTitle);
         assertThat(countAfter).isEqualTo(countBefore);
     }
+
+    @Test
+    void updateTaskListTitle_withDuplicateTitle_shouldReturn400BadRequest() throws Exception{
+        // Arrange
+        long countBefore = taskListRepository.count();
+        String originalTitle = "Shopping List";
+
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(originalTitle);
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(originalTitle, List.of()),
+                ownerUser,
+                List.of());
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Task list title already exists!"));
+
+        // Post-action verification
+        long countAfter = taskListRepository.count();
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getTitle()).isEqualTo(originalTitle);
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
 }
