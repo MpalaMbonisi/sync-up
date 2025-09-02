@@ -968,4 +968,35 @@ public class TaskListIntegrationTest {
         assertThat(retrievedTaskList.get().getTitle()).isEqualTo(originalTitle);
         assertThat(countAfter).isEqualTo(countBefore);
     }
+
+    @ParameterizedTest
+    @CsvSource({"'', 'Title cannot be empty.'", "'   ', 'Title cannot be blank.'"})
+    void updateTaskListTitle_withEmptyOrBlankTitle_shouldReturn400BadRequest(String invalidTitle, String expectedMessage) throws Exception{
+        // Arrange
+        long countBefore = taskListRepository.count();
+        String originalTitle = "Shopping List";
+
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(invalidTitle);
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(originalTitle, List.of()),
+                ownerUser,
+                List.of());
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message", hasItems(expectedMessage)));
+
+        // Post-action verification
+        long countAfter = taskListRepository.count();
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getTitle()).isEqualTo(originalTitle);
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
 }
