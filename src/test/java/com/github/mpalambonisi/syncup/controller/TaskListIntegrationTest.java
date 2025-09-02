@@ -98,11 +98,22 @@ public class TaskListIntegrationTest {
         return taskListRepository.save(taskList);
     }
 
+    private TaskList assertValidTaskListCreation(TaskList savedTaskList, User expectedUser, List<User> expectedCollaborators){
+        assertThat(savedTaskList).isNotNull();
+        assertThat(savedTaskList.getId()).isNotNull();
+        assertThat(savedTaskList.getOwner()).isEqualTo(expectedUser);
+        assertThat(savedTaskList.getTitle()).isEqualTo("Shopping List");
+        if(!expectedCollaborators.isEmpty()){
+            assertThat(savedTaskList.getCollaborators()).containsAll(expectedCollaborators);
+        }
+        return savedTaskList;
+    }
+
     @Test
     void createList_asOwner_shouldReturn201CreatedAndList() throws Exception{
         // Arrange
         TaskListCreateDTO dto = TaskListCreateDTO.builder()
-                .title("Grocery Shopping List")
+                .title("Shopping List")
                 .build();
 
         // Act & Assert
@@ -124,7 +135,7 @@ public class TaskListIntegrationTest {
     void createList_asUnauthenticatedUser_shouldReturn401Unauthorized() throws Exception{
         // Arrange
         TaskListCreateDTO dto = TaskListCreateDTO.builder()
-                .title("Grocery Shopping List")
+                .title("Shopping List")
                 .build();
 
         // Act & Assert
@@ -142,8 +153,11 @@ public class TaskListIntegrationTest {
     @Test
     void createList_withDuplicateTitle_shouldReturn409Conflict() throws Exception{
         // Arrange
-        String title = "Grocery Shopping List";
-        createTaskListAndSave(title, List.of());
+        String title = "Shopping List";
+        assertValidTaskListCreation(
+                createTaskListAndSave(title, List.of()),
+                ownerUser,
+                List.of());
         TaskListCreateDTO dto = new TaskListCreateDTO(title);
 
         // Act & Assert
@@ -182,8 +196,17 @@ public class TaskListIntegrationTest {
     @Test
     void getAllLists_asAuthenticatedUser_shouldReturn200OkAndLists() throws Exception{
         // Arrange
-        createTaskListAndSave("Grocery Shopping List", List.of());
-        createTaskListAndSave("Clothing Wishlist", List.of());
+        assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
+
+        TaskList taskList02 = createTaskListAndSave("Clothing Wishlist", List.of());
+        assertThat(taskList02).isNotNull();
+        assertThat(taskList02.getId()).isNotNull();
+        assertThat(taskList02.getOwner()).isEqualTo(ownerUser);
+        assertThat(taskList02.getTitle()).isEqualTo("Clothing Wishlist");
+        assertThat(taskList02.getCollaborators()).isEmpty();
 
         // Assert & Act
         mockMvc.perform(MockMvcRequestBuilders.get("/list/all")
@@ -191,7 +214,7 @@ public class TaskListIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[1].title").value("Grocery Shopping List"))
+                .andExpect(jsonPath("$[1].title").value("Shopping List"))
                 .andExpect(jsonPath("$[1].owner").value(ownerUser.getUsername()))
                 .andExpect(jsonPath("$[0].title").value("Clothing Wishlist"))
                 .andExpect(jsonPath("$[0].owner").value(ownerUser.getUsername()));
@@ -210,13 +233,16 @@ public class TaskListIntegrationTest {
     @Test
     void getListById_asOwner_shouldReturn200AndList() throws Exception{
         // Arrange
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/" + savedTaskList.getId())
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Grocery Shopping List"))
+                .andExpect(jsonPath("$.title").value("Shopping List"))
                 .andExpect(jsonPath("$.owner").value("mbonisimpala"));
     }
 
@@ -224,7 +250,10 @@ public class TaskListIntegrationTest {
     void getListById_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "ReallyStrongPassword1234");
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/" + savedTaskList.getId())
@@ -237,13 +266,17 @@ public class TaskListIntegrationTest {
     void getListById_asCollaboratorUser_shouldReturn200AndList() throws Exception{
         // Arrange
         User collaborator = createUserAndSave("John", "Smith", "VeryStrongPassword1234");
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of(collaborator));
+
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of(collaborator)),
+                ownerUser,
+                List.of(collaborator));
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/" + savedTaskList.getId())
                 .with(SecurityMockMvcRequestPostProcessors.user(collaborator)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Grocery Shopping List"))
+                .andExpect(jsonPath("$.title").value("Shopping List"))
                 .andExpect(jsonPath("$.owner").value("mbonisimpala"))
                 .andExpect(jsonPath("$.collaborators.length()").value(1))
                 .andExpect(jsonPath("$.collaborators[0]").value("johnsmith"));
@@ -268,7 +301,10 @@ public class TaskListIntegrationTest {
     @Test
     void getListById_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
         // Arrange
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/" + savedTaskList.getId())) // skip authentication
@@ -279,7 +315,11 @@ public class TaskListIntegrationTest {
     @Test
     void deleteListById_asOwner_shouldReturn204NoContent() throws Exception{
         // Arrange
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
+
         long taskListId = savedTaskList.getId();
 
         // Act & Assert
@@ -298,7 +338,10 @@ public class TaskListIntegrationTest {
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "ReallyStrongPassword1234");
 
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
         long taskListId = savedTaskList.getId();
 
         // Act & Assert
@@ -331,8 +374,12 @@ public class TaskListIntegrationTest {
         // Arrange
         User collaborator = createUserAndSave("John", "Smith", "VeryStrongPassword1234");
 
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of(collaborator));
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of(collaborator)),
+                ownerUser,
+                List.of(collaborator));
         long taskListId = savedTaskList.getId();
+
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId)
                         .with(SecurityMockMvcRequestPostProcessors.user(collaborator)))
@@ -347,7 +394,10 @@ public class TaskListIntegrationTest {
     @Test
     void deleteListById_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
         // Arrange
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + savedTaskList.getId()))
@@ -361,7 +411,10 @@ public class TaskListIntegrationTest {
         User collaborator01 = createUserAndSave("John", "Smith", "VeryStrongPassword1234");
         User collaborator02 = createUserAndSave("Nicole", "Ncube", "ReallyStrongPassword1234");
 
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
         long taskListId = savedTaskList.getId();
 
         Set<String> collaboratorsList = new HashSet<>();
@@ -390,7 +443,10 @@ public class TaskListIntegrationTest {
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "ReallyStrongPassword1234");
 
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
         long taskListId = savedTaskList.getId();
 
         Set<String> collaboratorsList = new HashSet<>();
@@ -416,7 +472,10 @@ public class TaskListIntegrationTest {
         // Arrange
         String invalidUsername = "karensanders"; // non-existent
 
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
         long taskListId = savedTaskList.getId();
 
         Set<String> collaboratorsList = new HashSet<>();
@@ -466,7 +525,10 @@ public class TaskListIntegrationTest {
     @Test
     void addCollaboratorsByUsername_withEmptyCollaboratorsList_shouldReturn400BadRequest() throws Exception{
         // Arrange
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
         long taskListId = savedTaskList.getId();
 
         AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(new HashSet<>());
@@ -490,7 +552,10 @@ public class TaskListIntegrationTest {
     @Test
     void addCollaboratorsByUsername_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
         User collaborator01 = createUserAndSave("John", "Smith", "VeryStrongPassword1234");
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
         long taskListId = savedTaskList.getId();
 
         Set<String> collaboratorsList = new HashSet<>();
@@ -514,7 +579,10 @@ public class TaskListIntegrationTest {
     void removeCollaboratorByUsername_asOwner_shouldReturn204NoContent() throws Exception{
         // Arrange
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
-        TaskList savedList = createTaskListAndSave("Grocery Shopping List", List.of(collaborator));
+        TaskList savedList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of(collaborator)),
+                ownerUser,
+                List.of(collaborator));
 
         long taskListId = savedList.getId();
         RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
@@ -538,7 +606,10 @@ public class TaskListIntegrationTest {
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "ReallyStrongPassword1234");
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
 
-        TaskList savedList = createTaskListAndSave("Grocery Shopping List", List.of(collaborator));
+        TaskList savedList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of(collaborator)),
+                ownerUser,
+                List.of(collaborator));
         long taskListId = savedList.getId();
         RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
 
@@ -560,7 +631,10 @@ public class TaskListIntegrationTest {
     @Test
     void removeCollaboratorByUsername_withNonexistentCollaboratorUsername_shouldReturn404NotFound() throws Exception{
         // Arrange
-        TaskList savedList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
         long taskListId = savedList.getId();
         RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("karensanders"); // non-existent username
 
@@ -609,7 +683,10 @@ public class TaskListIntegrationTest {
     void removeCollaboratorByUsername_withEmptyOrBlankUsername_shouldReturn400BadRequest(String invalidUsername, String expectedMessage) throws Exception{
         // Arrange
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of(collaborator));
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of(collaborator)),
+                ownerUser,
+                List.of(collaborator));
         long taskListId = savedTaskList.getId();
         RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO(invalidUsername);
 
@@ -630,7 +707,10 @@ public class TaskListIntegrationTest {
     @Test
     void removeCollaboratorByUsername_asUnauthenticatedUser_shouldReturn200Ok() throws Exception{
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
-        TaskList savedList = createTaskListAndSave("Grocery Shopping List", List.of(collaborator));
+        TaskList savedList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of(collaborator)),
+                ownerUser,
+                List.of(collaborator));
         long taskListId = savedList.getId();
         RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
 
@@ -653,7 +733,9 @@ public class TaskListIntegrationTest {
         User collaborator01 = createUserAndSave("John", "Smith", "StrongPassword1234");
         User collaborator02 = createUserAndSave("Nicole", "Ncube", "ReallyStrongPassword1234");
 
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List",
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of(collaborator01, collaborator02)),
+                ownerUser,
                 List.of(collaborator01, collaborator02));
         long taskListId = savedTaskList.getId();
 
@@ -672,7 +754,9 @@ public class TaskListIntegrationTest {
         User collaborator02 = createUserAndSave("Nicole", "Ncube", "ReallyStrongPassword1234");
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "VeryStrongPassword1234");
 
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List",
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of(collaborator01, collaborator02)),
+                ownerUser,
                 List.of(collaborator01, collaborator02));
         long taskListId = savedTaskList.getId();
 
@@ -700,7 +784,10 @@ public class TaskListIntegrationTest {
     @Test
     void getAllCollaborators_withEmptyCollaboratorsList_shouldReturn200() throws Exception{
         // Arrange
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List", List.of());
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
         long taskListId = savedTaskList.getId();
 
         // Act & Assert
@@ -716,7 +803,9 @@ public class TaskListIntegrationTest {
         User collaborator01 = createUserAndSave("John", "Smith", "StrongPassword1234");
         User collaborator02 = createUserAndSave("Nicole", "Ncube", "ReallyStrongPassword1234");
 
-        TaskList savedTaskList = createTaskListAndSave("Grocery Shopping List",
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of(collaborator01, collaborator02)),
+                ownerUser,
                 List.of(collaborator01, collaborator02));
         long taskListId = savedTaskList.getId();
 
