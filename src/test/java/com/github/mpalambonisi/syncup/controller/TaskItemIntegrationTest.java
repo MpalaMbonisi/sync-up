@@ -468,4 +468,28 @@ public class TaskItemIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
     }
+
+    @Test
+    void getTaskItemById_asOwner_shouldReturn200OkAndUpdatedTaskItem() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser,
+                null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId;
+        mockMvc.perform(MockMvcRequestBuilders.get(url)
+                .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(taskItemId))
+                .andExpect(jsonPath("$.description").value(savedTaskItem.getDescription()))
+                .andExpect(jsonPath("$.completed").value(savedTaskItem.getCompleted()))
+                .andExpect(jsonPath("$.taskListTitle").value(savedTaskList.getTitle()));
+    }
 }
