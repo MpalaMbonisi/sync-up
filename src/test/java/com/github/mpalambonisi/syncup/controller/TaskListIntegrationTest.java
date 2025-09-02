@@ -846,4 +846,36 @@ public class TaskListIntegrationTest {
         assertThat(retrievedTaskList.get().getTitle()).isEqualTo(updatedTitle);
         assertThat(countAfter).isEqualTo(countBefore);
     }
+
+    @Test
+    void TaskListTitle_asCollaborator_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
+
+        long countBefore = taskListRepository.count();
+        String updatedTitle = "Wishlist";
+        String originalTitle = "Shopping List";
+
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(originalTitle, List.of(collaborator)),
+                ownerUser,
+                List.of(collaborator));
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
+                        .with(SecurityMockMvcRequestPostProcessors.user(collaborator))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User not authorised to update this task list title!"));
+
+        // Post-action verification
+        long countAfter = taskListRepository.count();
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getTitle()).isEqualTo(originalTitle);
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
 }
