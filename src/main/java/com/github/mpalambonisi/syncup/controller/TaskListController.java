@@ -3,6 +3,8 @@ package com.github.mpalambonisi.syncup.controller;
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
+import com.github.mpalambonisi.syncup.dto.request.TaskListTitleUpdateDTO;
+import com.github.mpalambonisi.syncup.dto.response.TaskItemResponseDTO;
 import com.github.mpalambonisi.syncup.dto.response.TaskListResponseDTO;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
@@ -78,6 +80,14 @@ public class TaskListController {
         List<String> collaboratorUsernames = collaboratorsSet.stream().map(User::getUsername).toList();
         return ResponseEntity.ok(collaboratorUsernames);
     }
+
+    @PatchMapping("/{id}/title/update")
+    public ResponseEntity<TaskListResponseDTO> updateTaskListTitle(@PathVariable Long id, @Valid @RequestBody TaskListTitleUpdateDTO dto, @AuthenticationPrincipal User currentUser){
+        TaskListResponseDTO taskListResponseDTO = convertIntoDto(
+                taskListService.updateTaskListTitle(id, dto, currentUser));
+        return ResponseEntity.ok(taskListResponseDTO);
+    }
+
 
     private TaskListResponseDTO convertIntoDto(TaskList taskList){
         return TaskListResponseDTO.builder()
