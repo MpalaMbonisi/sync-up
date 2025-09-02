@@ -815,4 +815,35 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
     }
 
+    @Test
+    void updateTaskListTitle_asOwner_shouldReturn200OkAndUpdatedTaskList() throws Exception{
+        // Arrange
+        long countBefore = taskListRepository.count();
+        String updatedTitle = "Wishlist";
+
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser,
+                List.of());
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(taskListId))
+                .andExpect(jsonPath("$.title").value(updatedTitle))
+                .andExpect(jsonPath("$.owner").value("mbonisimpala"))
+                .andExpect(jsonPath("$.collaborators").isEmpty());
+
+        // Post-action verification
+        long countAfter = taskListRepository.count();
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getTitle()).isEqualTo(updatedTitle);
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
 }
