@@ -999,4 +999,25 @@ public class TaskListIntegrationTest {
         assertThat(retrievedTaskList.get().getTitle()).isEqualTo(originalTitle);
         assertThat(countAfter).isEqualTo(countBefore);
     }
+
+    @Test
+    void updateTaskListTitle_withNonExistentTaskListId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        long invalidTaskListId = 999L; // non-existent task list ID
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO("Wishlist");
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  invalidTaskListId + "/title/update")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found!"));
+
+        // Post-action verification
+        long countAfter = taskListRepository.count();
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(invalidTaskListId);
+        assertThat(retrievedTaskList.isEmpty()).isTrue();
+        assertThat(countAfter).isEqualTo(0);
+    }
 }
