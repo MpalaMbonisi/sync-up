@@ -941,7 +941,7 @@ public class TaskListIntegrationTest {
     }
 
     @Test
-    void updateTaskListTitle_withDuplicateTitle_shouldReturn400BadRequest() throws Exception{
+    void updateTaskListTitle_withDuplicateTitle_shouldReturnConflict409() throws Exception{
         // Arrange
         long countBefore = taskListRepository.count();
         String originalTitle = "Shopping List";
@@ -958,7 +958,7 @@ public class TaskListIntegrationTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Task list title already exists!"));
 
         // Post-action verification
