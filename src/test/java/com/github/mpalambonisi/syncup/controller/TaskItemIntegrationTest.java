@@ -580,4 +580,23 @@ public class TaskItemIntegrationTest {
                 .andExpect(jsonPath("$.message.length()").value(1))
                 .andExpect(jsonPath("$.message").value("List not found!"));
     }
+
+    @Test
+    void getTaskItemById_withNonExistentTaskItemId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser, null);
+
+        long taskListId = savedTaskList.getId();
+        long invalidTaskItemId = 999L; // non-existent task item Id
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + invalidTaskItemId;
+        mockMvc.perform(MockMvcRequestBuilders.get(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("Task item not found!"));
+    }
 }
