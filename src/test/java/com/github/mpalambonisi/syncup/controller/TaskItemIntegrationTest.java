@@ -540,4 +540,23 @@ public class TaskItemIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
     }
+
+    @Test
+    void getTaskItemById_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser, null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId;
+        mockMvc.perform(MockMvcRequestBuilders.get(url))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
+    }
 }
