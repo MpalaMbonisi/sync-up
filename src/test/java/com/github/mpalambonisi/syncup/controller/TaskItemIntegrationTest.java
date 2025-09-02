@@ -271,7 +271,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void updateTask_asOwner_shouldReturn200OkAndTaskItemResponseDTO() throws Exception{
+    void updateTaskItemStatus_asOwner_shouldReturn200OkAndTaskItemResponseDTO() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave(null),
@@ -301,7 +301,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void updateTask_asCollaborator_shouldReturn200OkAndTaskItemResponseDTO() throws Exception{
+    void updateTaskItemStatus_asCollaborator_shouldReturn200OkAndTaskItemResponseDTO() throws Exception{
         // Arrange
         User collaborator = createUserAndSave("John", "Smith", encoder.encode("ReallyStrongPassword1234"));
 
@@ -332,7 +332,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void updateTask_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void updateTaskItemStatus_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", encoder.encode("VeryStrongPassword1234"));
 
@@ -361,7 +361,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void updateTask_withNonExistentTaskListId_shouldReturn404NotFound() throws Exception{
+    void updateTaskItemStatus_withNonExistentTaskListId_shouldReturn404NotFound() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave(null),
@@ -390,7 +390,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void updateTask_withNonExistentTaskItemId_shouldReturn404NotFound() throws Exception{
+    void updateTaskItemStatus_withNonExistentTaskItemId_shouldReturn404NotFound() throws Exception{
         TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave(null),
                 ownerUser,
@@ -412,7 +412,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void updateTask_whenTaskDoesNotBelongToList_shouldReturn403Forbidden() throws Exception{
+    void updateTaskItemStatus_whenTaskDoesNotBelongToList_shouldReturn403Forbidden() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave(null),
@@ -448,7 +448,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void update_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
+    void updateTaskItemStatus_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave(null),
