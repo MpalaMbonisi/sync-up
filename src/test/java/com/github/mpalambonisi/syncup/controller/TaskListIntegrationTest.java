@@ -818,7 +818,6 @@ public class TaskListIntegrationTest {
     @Test
     void updateTaskListTitle_asOwner_shouldReturn200OkAndUpdatedTaskList() throws Exception{
         // Arrange
-        long countBefore = taskListRepository.count();
         String updatedTitle = "Wishlist";
 
         TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
@@ -827,6 +826,7 @@ public class TaskListIntegrationTest {
                 ownerUser,
                 List.of());
         long taskListId = savedTaskList.getId();
+        long countBefore = taskListRepository.count();
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
@@ -852,7 +852,6 @@ public class TaskListIntegrationTest {
         // Arrange
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
 
-        long countBefore = taskListRepository.count();
         String updatedTitle = "Wishlist";
         String originalTitle = "Shopping List";
 
@@ -862,6 +861,7 @@ public class TaskListIntegrationTest {
                 ownerUser,
                 List.of(collaborator));
         long taskListId = savedTaskList.getId();
+        long countBefore = taskListRepository.count();
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
@@ -884,7 +884,6 @@ public class TaskListIntegrationTest {
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "VeryStrongPassword1234");
 
-        long countBefore = taskListRepository.count();
         String updatedTitle = "Wishlist";
         String originalTitle = "Shopping List";
 
@@ -894,6 +893,7 @@ public class TaskListIntegrationTest {
                 ownerUser,
                 List.of());
         long taskListId = savedTaskList.getId();
+        long countBefore = taskListRepository.count();
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
@@ -914,7 +914,6 @@ public class TaskListIntegrationTest {
     @Test
     void updateTaskListTitle_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
         // Arrange
-        long countBefore = taskListRepository.count();
         String updatedTitle = "Wishlist";
         String originalTitle = "Shopping List";
 
@@ -924,6 +923,7 @@ public class TaskListIntegrationTest {
                 ownerUser,
                 List.of());
         long taskListId = savedTaskList.getId();
+        long countBefore = taskListRepository.count();
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
@@ -943,7 +943,6 @@ public class TaskListIntegrationTest {
     @Test
     void updateTaskListTitle_withDuplicateTitle_shouldReturnConflict409() throws Exception{
         // Arrange
-        long countBefore = taskListRepository.count();
         String originalTitle = "Shopping List";
 
         TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(originalTitle);
@@ -952,6 +951,8 @@ public class TaskListIntegrationTest {
                 ownerUser,
                 List.of());
         long taskListId = savedTaskList.getId();
+        long countBefore = taskListRepository.count();
+
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
@@ -973,7 +974,6 @@ public class TaskListIntegrationTest {
     @CsvSource({"'', 'Title cannot be empty.'", "'   ', 'Title cannot be blank.'"})
     void updateTaskListTitle_withEmptyOrBlankTitle_shouldReturn400BadRequest(String invalidTitle, String expectedMessage) throws Exception{
         // Arrange
-        long countBefore = taskListRepository.count();
         String originalTitle = "Shopping List";
 
         TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(invalidTitle);
@@ -982,6 +982,7 @@ public class TaskListIntegrationTest {
                 ownerUser,
                 List.of());
         long taskListId = savedTaskList.getId();
+        long countBefore = taskListRepository.count();
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
