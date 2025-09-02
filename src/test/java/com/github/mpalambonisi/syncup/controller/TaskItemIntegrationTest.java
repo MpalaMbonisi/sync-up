@@ -518,4 +518,26 @@ public class TaskItemIntegrationTest {
                 .andExpect(jsonPath("$.completed").value(savedTaskItem.getCompleted()))
                 .andExpect(jsonPath("$.taskListTitle").value(savedTaskList.getTitle()));
     }
+
+    @Test
+    void getTaskItemById_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        User unauthorisedUser = createUserAndSave("Karen", "Sanders", encoder.encode("VeryStrongPassword1234"));
+
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser, null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId;
+        mockMvc.perform(MockMvcRequestBuilders.get(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
+    }
 }
