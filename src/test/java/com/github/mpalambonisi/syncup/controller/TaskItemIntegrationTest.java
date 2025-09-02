@@ -470,7 +470,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void getTaskItemById_asOwner_shouldReturn200OkAndUpdatedTaskItem() throws Exception{
+    void getTaskItemById_asOwner_shouldReturn200OkAndTaskItem() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave(null),
@@ -486,6 +486,32 @@ public class TaskItemIntegrationTest {
         String url = "/list/" + taskListId + "/task/" + taskItemId;
         mockMvc.perform(MockMvcRequestBuilders.get(url)
                 .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(taskItemId))
+                .andExpect(jsonPath("$.description").value(savedTaskItem.getDescription()))
+                .andExpect(jsonPath("$.completed").value(savedTaskItem.getCompleted()))
+                .andExpect(jsonPath("$.taskListTitle").value(savedTaskList.getTitle()));
+    }
+
+    @Test
+    void getTaskItemById_asCollaborator_shouldReturn200OkAndTaskItem() throws Exception{
+        // Arrange
+        User collaborator = createUserAndSave("John", "Smith", encoder.encode("ReallyStrongPassword1234"));
+
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(collaborator),
+                ownerUser,
+                collaborator);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId;
+        mockMvc.perform(MockMvcRequestBuilders.get(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(collaborator)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(taskItemId))
                 .andExpect(jsonPath("$.description").value(savedTaskItem.getDescription()))
