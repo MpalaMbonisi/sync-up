@@ -32,7 +32,7 @@ public class TaskItemController {
         return new ResponseEntity<>(convertToResponseDTO(taskItem), HttpStatus.CREATED);
     }
 
-    @PatchMapping("/list/{listId}/task/{taskId}/update")
+    @PatchMapping("/list/{listId}/task/{taskId}/status")
     public ResponseEntity<TaskItemResponseDTO> updateTaskStatus(@PathVariable Long listId, @PathVariable Long taskId,
                                                        @Valid @RequestBody TaskItemStatusDTO dto, @AuthenticationPrincipal User currentUser){
         TaskItem taskItem = taskItemService.updateTaskItemStatus(listId, taskId, dto, currentUser);

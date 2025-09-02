@@ -284,7 +284,7 @@ public class TaskItemIntegrationTest {
         long taskItemId = savedTaskItem.getId();
 
         // Act & Assert
-        String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/status";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -315,7 +315,7 @@ public class TaskItemIntegrationTest {
         long taskItemId = savedTaskItem.getId();
 
         // Act & Assert
-        String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/status";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(collaborator))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -346,7 +346,7 @@ public class TaskItemIntegrationTest {
         long taskItemId = savedTaskItem.getId();
 
         // Act & Assert
-        String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/status";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -373,7 +373,7 @@ public class TaskItemIntegrationTest {
         long taskItemId = savedTaskItem.getId();
 
         // Act & Assert
-        String url = "/list/" + invalidTaskListId + "/task/" + taskItemId + "/update";
+        String url = "/list/" + invalidTaskListId + "/task/" + taskItemId + "/status";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -400,7 +400,7 @@ public class TaskItemIntegrationTest {
         long invalidTaskItemId = 999L; // non-existent task item ID
 
         // Act & Assert
-        String url = "/list/" + invalidTaskListId + "/task/" + invalidTaskItemId + "/update";
+        String url = "/list/" + invalidTaskListId + "/task/" + invalidTaskItemId + "/status";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -433,7 +433,7 @@ public class TaskItemIntegrationTest {
         long taskItemId = savedTaskItem.getId(); // But this task belongs to different list
 
         // Act & Assert
-        String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/status";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -461,7 +461,7 @@ public class TaskItemIntegrationTest {
         long taskItemId = savedTaskItem.getId();
 
         // Act & Assert
-        String url = "/list/" + taskListId + "/task/" + taskItemId + "/update";
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/status";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
