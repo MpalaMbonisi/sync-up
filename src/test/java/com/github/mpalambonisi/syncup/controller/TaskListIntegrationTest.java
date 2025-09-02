@@ -881,6 +881,7 @@ public class TaskListIntegrationTest {
 
     @Test
     void updateTaskListTitle_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+        // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "VeryStrongPassword1234");
 
         long countBefore = taskListRepository.count();
@@ -901,6 +902,35 @@ public class TaskListIntegrationTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("User not authorised to update this task list title!"));
+
+        // Post-action verification
+        long countAfter = taskListRepository.count();
+        Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
+        assertThat(retrievedTaskList.isPresent()).isTrue();
+        assertThat(retrievedTaskList.get().getTitle()).isEqualTo(originalTitle);
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
+
+    @Test
+    void updateTaskListTitle_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
+        // Arrange
+        long countBefore = taskListRepository.count();
+        String updatedTitle = "Wishlist";
+        String originalTitle = "Shopping List";
+
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(originalTitle, List.of()),
+                ownerUser,
+                List.of());
+        long taskListId = savedTaskList.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.patch("/list/" +  taskListId + "/title/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
 
         // Post-action verification
         long countAfter = taskListRepository.count();
