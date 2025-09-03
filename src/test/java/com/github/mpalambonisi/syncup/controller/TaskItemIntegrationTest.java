@@ -881,4 +881,43 @@ public class TaskItemIntegrationTest {
         long taskItemCount = taskItemRepository.count();
         assertThat(taskItemCount).isEqualTo(0);
     }
+
+    @Test
+    void updateTaskItemDescription_whenTaskItemDoesNotBelongToTaskList_shouldReturn403Forbidden() throws Exception{
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser,
+                null);
+
+        User differentOwner = createUserAndSave("Nicole", "Ncube", encoder.encode("SuperStrongPassword1234"));
+
+        TaskList differentTaskList = new TaskList();
+        differentTaskList.setTitle("Shopping List");
+        differentTaskList.setOwner(differentOwner);
+        taskListRepository.save(differentTaskList);
+
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(differentTaskList), differentTaskList);
+
+        long countBefore = taskItemRepository.count();
+        long taskListId = savedTaskList.getId(); // User has access to this list
+        long taskItemId = savedTaskItem.getId(); // But this task belongs to different list
+        String updatedDesc = "Nike AirForce 1s";
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/description";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(updatedDesc))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Task does not belong to the specified list!"));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(savedTaskItem.getDescription());
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
 }
