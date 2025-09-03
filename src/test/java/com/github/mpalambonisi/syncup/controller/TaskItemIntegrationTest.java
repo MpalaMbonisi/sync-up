@@ -699,4 +699,37 @@ public class TaskItemIntegrationTest {
         assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(updatedDesc);
         assertThat(countAfter).isEqualTo(countBefore);
     }
+
+    @Test
+    void updateTaskItemDescription_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+        // Arrange
+        User unauthorisedUser = createUserAndSave("Karen", "Sanders", encoder.encode("VeryStrongPassword1234"));
+
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser, null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long countBefore = taskItemRepository.count();
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+        String updatedDesc = "Nike AirForce 1s";
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/description";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(updatedDesc))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo("Baggy Jeans"); // does not update
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
 }
