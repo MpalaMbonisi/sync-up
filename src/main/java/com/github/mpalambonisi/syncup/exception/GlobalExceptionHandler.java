@@ -46,6 +46,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(DescriptionAlreadyExistsException.class)
+    public ResponseEntity<Object> handleDescriptionAlreadyExistsException(DescriptionAlreadyExistsException e){
+        ErrorResponse error = new ErrorResponse(List.of(e.getMessage()));
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(EmptyResultDataAccessException.class)
     public ResponseEntity<Object> handleDataAccessException(){
         ErrorResponse error = new ErrorResponse(List.of("Cannot delete non-existing resource."));
