@@ -761,4 +761,34 @@ public class TaskItemIntegrationTest {
         assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(savedTaskItem.getDescription());
         assertThat(countAfter).isEqualTo(countBefore);
     }
+
+    @ParameterizedTest
+    @CsvSource({"'', 'Description cannot be empty.'", "'    ', 'Description cannot be blank.'"})
+    void updateTaskItemDescription_withEmptyOrBlankDescription_shouldReturn400BadRequest(String invalidDesc, String expectedMessage) throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser, null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long countBefore = taskItemRepository.count();
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/description";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(invalidDesc))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isArray())
+                .andExpect(jsonPath("$.message", hasItems(expectedMessage)));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(savedTaskItem.getDescription());
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
 }
