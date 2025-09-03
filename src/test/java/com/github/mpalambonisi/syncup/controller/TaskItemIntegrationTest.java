@@ -663,4 +663,40 @@ public class TaskItemIntegrationTest {
         assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(updatedDesc);
         assertThat(countAfter).isEqualTo(countBefore);
     }
+
+    @Test
+    void updateTaskItemDescription_asCollaborator_shouldReturn200OkAndUpdatedTaskItem() throws Exception{
+        // Arrange
+        User collaborator = createUserAndSave("John", "Smith", encoder.encode("ReallyStrongPassword1234"));
+
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(collaborator),
+                ownerUser, collaborator);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long countBefore = taskItemRepository.count();
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+        String updatedDesc = "Nike AirForce 1s";
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/description";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .with(SecurityMockMvcRequestPostProcessors.user(collaborator))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(updatedDesc))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(taskItemId))
+                .andExpect(jsonPath("$.description").value(updatedDesc))
+                .andExpect(jsonPath("$.completed").value(savedTaskItem.getCompleted()))
+                .andExpect(jsonPath("$.taskListTitle").value(savedTaskList.getTitle()));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(updatedDesc);
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
 }
