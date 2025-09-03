@@ -4,6 +4,7 @@ import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskItemStatusDTO;
 import com.github.mpalambonisi.syncup.dto.request.TaskItemDescriptionDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
+import com.github.mpalambonisi.syncup.exception.DescriptionAlreadyExistsException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.exception.TaskNotFoundException;
 import com.github.mpalambonisi.syncup.model.TaskItem;
@@ -59,6 +60,10 @@ public class TaskItemServiceImpl implements TaskItemService {
 
         TaskItem foundTaskItem = taskItemRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
+
+        if(taskItemRepository.findByDescription(dto.getDescription()).isPresent()){
+            throw new DescriptionAlreadyExistsException("Task item description already exists!");
+        }
 
         if(!foundTaskItem.getTaskList().getId().equals(listId)){
             throw new AccessDeniedException("Task does not belong to the specified list!");
