@@ -47,7 +47,7 @@ public class TaskItemController {
         return ResponseEntity.ok(convertToResponseDTO(taskItem));
     }
 
-    private TaskItemResponseDTO convertToResponseDTO(TaskItem taskItem){
+    protected static TaskItemResponseDTO convertToResponseDTO(TaskItem taskItem){
         return TaskItemResponseDTO.builder()
                 .id(taskItem.getId())
                 .description(taskItem.getDescription())
