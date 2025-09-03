@@ -778,8 +778,9 @@ public class TaskItemIntegrationTest {
 
         String url = "/list/" + taskListId + "/task/" + taskItemId + "/description";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(invalidDesc))))
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(invalidDesc))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message", hasItems(expectedMessage)));
@@ -809,10 +810,43 @@ public class TaskItemIntegrationTest {
         // Act & Assert
         String url = "/list/" + taskListId + "/task/" + taskItemId + "/description";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(duplicateDesc))))
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(duplicateDesc))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Task item description already exists!"));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(savedTaskItem.getDescription());
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
+
+    @Test
+    void updateTaskItemDescription_withNonExistentTaskListId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser, null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long countBefore = taskItemRepository.count();
+        long invalidTaskListId = 999L; // non-existent task list Id
+        long taskItemId = savedTaskItem.getId();
+        String updatedDesc = "Nike AirForce 1s";
+
+        // Act & Assert
+        String url = "/list/" + invalidTaskListId + "/task/" + taskItemId + "/description";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(updatedDesc))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("List not found!"));
 
         // Post-Action verification
         long countAfter = taskItemRepository.count();
