@@ -751,7 +751,7 @@ public class TaskItemIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(updatedDesc))))
-                .andExpect(status().isForbidden())
+                .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
 
         // Post-Action verification
