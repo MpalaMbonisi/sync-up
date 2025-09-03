@@ -19,6 +19,6 @@ public class TaskListResponseDTO {
     private String title;
     private String owner;
     private Set<String> collaborators;
-    private List<TaskItem> tasks;
+    private List<TaskItemResponseDTO> tasks;
 
 }
