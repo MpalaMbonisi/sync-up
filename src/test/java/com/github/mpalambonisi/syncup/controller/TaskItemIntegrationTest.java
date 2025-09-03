@@ -4,6 +4,7 @@ package com.github.mpalambonisi.syncup.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskItemStatusDTO;
+import com.github.mpalambonisi.syncup.dto.request.TaskItemDescriptionDTO;
 import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
@@ -627,5 +628,39 @@ public class TaskItemIntegrationTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("Task does not belong to the specified list!"));
+    }
+
+    @Test
+    void updateTaskItemDescription_asOwner_shouldReturn200OkAndUpdatedTaskItem() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                 ownerUser, null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long countBefore = taskItemRepository.count();
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+        String updatedDesc = "Nike AirForce 1s";
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/description";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                    .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(updatedDesc))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(taskItemId))
+                .andExpect(jsonPath("$.description").value(updatedDesc))
+                .andExpect(jsonPath("$.completed").value(savedTaskItem.getCompleted()))
+                .andExpect(jsonPath("$.taskListTitle").value(savedTaskList.getTitle()));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(updatedDesc);
+        assertThat(countAfter).isEqualTo(countBefore);
     }
 }
