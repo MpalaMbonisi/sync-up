@@ -6,6 +6,7 @@ import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.dto.request.TaskListTitleUpdateDTO;
 import com.github.mpalambonisi.syncup.dto.response.TaskItemResponseDTO;
 import com.github.mpalambonisi.syncup.dto.response.TaskListResponseDTO;
+import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.service.impl.TaskListServiceImpl;
@@ -88,12 +89,17 @@ public class TaskListController {
         return ResponseEntity.ok(taskListResponseDTO);
     }
 
-
     private TaskListResponseDTO convertIntoDto(TaskList taskList){
+        List<TaskItemResponseDTO> taskItemList = taskList.getTasks()
+                .stream()
+                .map(TaskItemController::convertToResponseDTO)
+                .toList();
+
         return TaskListResponseDTO.builder()
                 .id(taskList.getId())
                 .title(taskList.getTitle())
                 .owner(taskList.getOwner().getUsername())
+                .tasks(taskItemList)
                 .collaborators(taskList.getCollaborators()
                         .stream()
                         .map(User::getUsername)
