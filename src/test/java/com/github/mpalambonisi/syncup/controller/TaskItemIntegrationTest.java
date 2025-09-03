@@ -855,4 +855,30 @@ public class TaskItemIntegrationTest {
         assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(savedTaskItem.getDescription());
         assertThat(countAfter).isEqualTo(countBefore);
     }
+
+    @Test
+    void updateTaskItemDescription_withNonExistentTaskItemId_shouldReturn404NotFound() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser, null);
+
+        long taskListId = savedTaskList.getId();
+        long invalidTaskItemId = 999L; // non-existent task item Id
+        String updatedDesc = "Nike AirForce 1s";
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + invalidTaskItemId + "/description";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(updatedDesc))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message.length()").value(1))
+                .andExpect(jsonPath("$.message").value("Task item not found!"));
+
+        // Post-Action verification
+        long taskItemCount = taskItemRepository.count();
+        assertThat(taskItemCount).isEqualTo(0);
+    }
 }
