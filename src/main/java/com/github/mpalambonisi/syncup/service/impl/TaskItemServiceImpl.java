@@ -30,6 +30,10 @@ public class TaskItemServiceImpl implements TaskItemService {
     public TaskItem saveTask(long listId, TaskItemCreateDTO dto, User user) {
         TaskList foundList = checkListAvailabilityAndAccess(listId, user);
 
+        if(taskItemRepository.findByDescription(dto.getDescription().trim()).isPresent()){
+            throw new DescriptionAlreadyExistsException("Task item description already exists!");
+        }
+
         TaskItem taskItem = new TaskItem();
         taskItem.setDescription(dto.getDescription().trim());
         taskItem.setTaskList(foundList);
