@@ -272,6 +272,47 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
+    void createTask_withDuplicateDescription_shouldReturn409Conflict() throws Exception{
+        // Arrange
+        TaskList existingTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser,
+                null);
+        TaskItem existingTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(existingTaskList), existingTaskList);
+
+        String duplicateDesc = existingTaskItem.getDescription();
+        TaskItemCreateDTO dto = new TaskItemCreateDTO(duplicateDesc);
+
+        // create and save a task list
+        TaskList savedTaskList = new TaskList();
+        savedTaskList.setTitle("Wishlist");
+        savedTaskList.setOwner(ownerUser);
+        taskListRepository.save(savedTaskList);
+
+        // assert saved task list
+        assertThat(savedTaskList).isNotNull();
+        assertThat(savedTaskList.getId()).isNotNull();
+        assertThat(savedTaskList.getOwner()).isEqualTo(ownerUser);
+        assertThat(savedTaskList.getTitle()).isEqualTo("Wishlist");
+
+        long taskListId = savedTaskList.getId();
+        long countBefore = taskItemRepository.count();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + taskListId + "/task/create")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Task item description already exists!"));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
+
+    @Test
     void updateTaskItemStatus_asOwner_shouldReturn200OkAndTaskItemResponseDTO() throws Exception{
         // Arrange
         TaskList savedTaskList = assertValidTaskListCreation(
