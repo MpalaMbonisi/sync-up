@@ -729,7 +729,36 @@ public class TaskItemIntegrationTest {
         long countAfter = taskItemRepository.count();
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
         assertThat(retrievedTaskItem.isPresent()).isTrue();
-        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo("Baggy Jeans"); // does not update
+        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(savedTaskItem.getDescription()); // does not update
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
+
+    @Test
+    void updateTaskItemDescription_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception{
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser, null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long countBefore = taskItemRepository.count();
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+        String updatedDesc = "Nike AirForce 1s";
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/description";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(updatedDesc))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(savedTaskItem.getDescription());
         assertThat(countAfter).isEqualTo(countBefore);
     }
 }
