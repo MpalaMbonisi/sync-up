@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -69,11 +70,13 @@ public class TaskItemServiceTest {
     @Test
     void saveTask_whenUserIsOwner_shouldCreateAndReturnTask(){
         // Arrange
-        TaskItemCreateDTO dto = new TaskItemCreateDTO("1kg Banana");
+        String description = "1kg Banana";
+        TaskItemCreateDTO dto = new TaskItemCreateDTO(description);
         long taskListId = 1L;
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findByDescription(description)).thenReturn(Optional.empty());
         when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> {
             TaskItem task = invocation.getArgument(0);
             task.setId(1L); // Simulate DB generating ID
@@ -86,7 +89,7 @@ public class TaskItemServiceTest {
         // Assert
         assertThat(savedTaskItem).isNotNull();
         assertThat(savedTaskItem.getId()).isEqualTo(1L);
-        assertThat(savedTaskItem.getDescription()).isEqualTo("1kg Banana");
+        assertThat(savedTaskItem.getDescription()).isEqualTo(description);
         assertThat(savedTaskItem.getCompleted()).isFalse(); // Default should be false
         assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
         assertThat(savedTaskItem.getTaskList().getTitle()).isEqualTo("Grocery Shopping List");
@@ -94,6 +97,7 @@ public class TaskItemServiceTest {
         // Verify interaction order
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository).findByDescription(description);
         inOrder.verify(taskItemRepository).save(any(TaskItem.class));
     }
 
@@ -102,11 +106,15 @@ public class TaskItemServiceTest {
         // Arrange
         User collaborator = new User(3L, "nicolencube", "Nicole", "Ncube",
                 "nicolencube@outlook.com", "VeryStrongPassword1234");
-        TaskItemCreateDTO dto = new TaskItemCreateDTO("1kg Banana");
+
+
+        String description = "1kg Banana";
+        TaskItemCreateDTO dto = new TaskItemCreateDTO(description);
         long taskListId = 1L;
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", collaborator);
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findByDescription(description)).thenReturn(Optional.empty());
         when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> {
             TaskItem task = invocation.getArgument(0);
             task.setId(1L); // Simulate DB generating ID
@@ -119,7 +127,7 @@ public class TaskItemServiceTest {
         // Assert
         assertThat(savedTaskItem).isNotNull();
         assertThat(savedTaskItem.getId()).isEqualTo(1L);
-        assertThat(savedTaskItem.getDescription()).isEqualTo("1kg Banana");
+        assertThat(savedTaskItem.getDescription()).isEqualTo(description);
         assertThat(savedTaskItem.getCompleted()).isFalse(); // Default should be false
         assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
         assertThat(savedTaskItem.getTaskList().getTitle()).isEqualTo("Grocery Shopping List");
@@ -128,6 +136,7 @@ public class TaskItemServiceTest {
         // Verify interaction order
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository).findByDescription(description);
         inOrder.verify(taskItemRepository).save(any(TaskItem.class));
     }
 
@@ -137,7 +146,8 @@ public class TaskItemServiceTest {
         User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
                 "karensanders@yahoo.com", "ReallyStrongPassword1234");
 
-        TaskItemCreateDTO dto = new TaskItemCreateDTO("1kg Banana");
+        String description = "1kg Banana";
+        TaskItemCreateDTO dto = new TaskItemCreateDTO(description);
         long taskListId = 1L;
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
 
@@ -151,6 +161,7 @@ public class TaskItemServiceTest {
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository, never()).findByDescription(description);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
@@ -158,7 +169,9 @@ public class TaskItemServiceTest {
     void saveTask_withNonExistentTaskList_shouldThrowListNotFoundException(){
         // Arrange
         long invalidTaskListId = 999L; // non-existent ID
-        TaskItemCreateDTO dto = new TaskItemCreateDTO("1kg Banana");
+
+        String description = "1kg Banana";
+        TaskItemCreateDTO dto = new TaskItemCreateDTO(description);
         when(taskListRepository.findById(invalidTaskListId)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -169,6 +182,7 @@ public class TaskItemServiceTest {
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(invalidTaskListId);
+        inOrder.verify(taskItemRepository, never()).findByDescription(description);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
