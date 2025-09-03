@@ -187,6 +187,33 @@ public class TaskItemServiceTest {
     }
 
     @Test
+    void saveTask_withDuplicateDescription_shouldThrowDescriptionAlreadyExistsException(){
+        // Arrange
+        TaskList existingTaskList = createTaskList(1L, "Grocery Shopping List", null);
+        TaskItem existingTaskItem = createTaskItem(100L, existingTaskList);
+
+        String duplicateDesc = existingTaskItem.getDescription();
+        TaskItemCreateDTO dto = new TaskItemCreateDTO(duplicateDesc);
+
+        long taskListId = 1L;
+        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
+
+        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findByDescription(duplicateDesc)).thenReturn(Optional.of(existingTaskItem));
+
+        // Act & Assert
+        DescriptionAlreadyExistsException exception = Assertions.assertThrows(DescriptionAlreadyExistsException.class,
+                () -> taskItemService.saveTask(taskListId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("Task item description already exists!");
+
+        // Verify interaction order
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskItemRepository).findByDescription(duplicateDesc);
+        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+    }
+
+    @Test
     void updateTask_whenUserIsOwner_shouldUpdateAndReturnTask(){
         // Arrange
         long taskListId = 1L, taskItemId = 1L;
