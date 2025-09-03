@@ -2,6 +2,7 @@ package com.github.mpalambonisi.syncup.controller;
 
 import com.github.mpalambonisi.syncup.dto.TaskItemCreateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskItemStatusDTO;
+import com.github.mpalambonisi.syncup.dto.request.TaskItemDescriptionDTO;
 import com.github.mpalambonisi.syncup.dto.response.TaskItemResponseDTO;
 import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.User;
@@ -36,6 +37,13 @@ public class TaskItemController {
     public ResponseEntity<TaskItemResponseDTO> updateTaskStatus(@PathVariable Long listId, @PathVariable Long taskId,
                                                        @Valid @RequestBody TaskItemStatusDTO dto, @AuthenticationPrincipal User currentUser){
         TaskItem taskItem = taskItemService.updateTaskItemStatus(listId, taskId, dto, currentUser);
+        return ResponseEntity.ok(convertToResponseDTO(taskItem));
+    }
+
+    @PatchMapping("/list/{listId}/task/{taskId}/description")
+    public ResponseEntity<TaskItemResponseDTO> updateTaskDescription(@PathVariable Long listId, @PathVariable Long taskId,
+                                                                     @Valid @RequestBody TaskItemDescriptionDTO dto, @AuthenticationPrincipal User currentUser){
+        TaskItem taskItem = taskItemService.updateTaskItemDescription(listId, taskId, dto, currentUser);
         return ResponseEntity.ok(convertToResponseDTO(taskItem));
     }
 
