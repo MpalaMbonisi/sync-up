@@ -791,4 +791,34 @@ public class TaskItemIntegrationTest {
         assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(savedTaskItem.getDescription());
         assertThat(countAfter).isEqualTo(countBefore);
     }
+
+    @Test
+    void updateTaskItemDescription_withDuplicateDescription_shouldReturn409Conflict() throws Exception{
+        // Arrange
+        TaskList savedTaskList = assertValidTaskListCreation(
+                createTaskListAndSave(null),
+                ownerUser, null);
+        TaskItem savedTaskItem = assertValidTaskItemCreation(
+                createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        long countBefore = taskItemRepository.count();
+        long taskListId = savedTaskList.getId();
+        long taskItemId = savedTaskItem.getId();
+        String duplicateDesc = savedTaskItem.getDescription();
+
+        // Act & Assert
+        String url = "/list/" + taskListId + "/task/" + taskItemId + "/description";
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(duplicateDesc))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Task item description already exists!"));
+
+        // Post-Action verification
+        long countAfter = taskItemRepository.count();
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        assertThat(retrievedTaskItem.isPresent()).isTrue();
+        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(savedTaskItem.getDescription());
+        assertThat(countAfter).isEqualTo(countBefore);
+    }
 }
