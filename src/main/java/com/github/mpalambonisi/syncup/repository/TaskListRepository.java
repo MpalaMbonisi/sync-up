@@ -15,4 +15,7 @@ public interface TaskListRepository extends JpaRepository<TaskList, Long> {
 
     @Query("SELECT DISTINCT tl FROM TaskList tl WHERE tl.owner = :user OR :user MEMBER OF tl.collaborators")
     List<TaskList> findAllByOwnerOrCollaborator(@Param("user") User user);
+
+    @Query("SELECT tl FROM TaskList tl WHERE tl.id = :id AND (tl.owner = :user OR :user MEMBER OF tl.collaborators)")
+    Optional<TaskList> findByIdAndUserHasAccess(@Param("id") Long id, @Param("user") User user);
 }
