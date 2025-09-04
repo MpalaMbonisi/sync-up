@@ -6,6 +6,7 @@ import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 import com.github.mpalambonisi.syncup.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,14 +21,23 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User registerUser(UserRegistrationDTO dto) {
-
-        // check if user exists in the database
         String username = dto.getUsername().toLowerCase().trim();
+
         if(userRepository.findByUsername(username).isPresent()){
             throw new UsernameExistsException("Username already in use.");
         }
 
-        return userRepository.save(createUserFromDTO(dto));
+        try{
+            User user = createUserFromDTO(dto);
+            return userRepository.saveAndFlush(user);
+
+        } catch(DataIntegrityViolationException e){
+
+            if(e.getMessage().contains("email")){
+                throw new UsernameExistsException("Email address already in use.");
+            }
+            throw e;
+        }
     }
 
     private User createUserFromDTO(UserRegistrationDTO dto){
