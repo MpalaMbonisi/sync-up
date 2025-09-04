@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TaskListRepository extends JpaRepository<TaskList, Long> {
-    Optional<TaskList> findByTitle(String title);
+    Optional<TaskList> findByTitleAndOwner(String title, User owner);
     List<TaskList> findAllByOwner(User owner);
 }
