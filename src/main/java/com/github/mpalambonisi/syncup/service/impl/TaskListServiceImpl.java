@@ -31,7 +31,7 @@ public class TaskListServiceImpl implements TaskListService {
     @Override
     @Transactional(readOnly = true)
     public List<TaskList> getAllListForOwner(User user) {
-        return taskListRepository.findAllByOwner(user);
+        return taskListRepository.findAllByOwnerOrCollaborator(user);
     }
 
     @Override
