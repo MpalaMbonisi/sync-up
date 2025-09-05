@@ -36,16 +36,17 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public TaskList saveTaskList(User user, TaskListCreateDTO dto) {
+        String trimmedTitle = dto.getTitle().trim();
 
-        if(taskListRepository.findByTitle(dto.getTitle()).isPresent()){
-            throw new TitleAlreadyExistsException("Title is already being used!");
+        if(taskListRepository.findByTitleAndOwner(trimmedTitle, user).isPresent()){
+            throw new TitleAlreadyExistsException("You already have a list with this title!");
         }
 
         TaskList taskList = new TaskList();
-        taskList.setTitle(dto.getTitle().trim());
+        taskList.setTitle(trimmedTitle);
         taskList.setOwner(user);
 
-        return taskListRepository.save(taskList);
+        return taskListRepository.saveAndFlush(taskList);
     }
 
     @Override
