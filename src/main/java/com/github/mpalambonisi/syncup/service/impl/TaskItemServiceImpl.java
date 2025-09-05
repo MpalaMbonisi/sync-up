@@ -64,21 +64,24 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem updateTaskItemDescription(long listId, long taskId, TaskItemDescriptionDTO dto, User user) {
-        checkListAvailabilityAndAccess(listId, user);
+        TaskList foundList = checkListAvailabilityAndAccess(listId, user);
 
         TaskItem foundTaskItem = taskItemRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
-
-        if(taskItemRepository.findByDescription(dto.getDescription()).isPresent()){
-            throw new DescriptionAlreadyExistsException("Task item description already exists!");
-        }
 
         if(!foundTaskItem.getTaskList().getId().equals(listId)){
             throw new AccessDeniedException("Task does not belong to the specified list!");
         }
 
-        foundTaskItem.setDescription(dto.getDescription());
+        String trimmedDescription = dto.getDescription().trim();
 
+        taskItemRepository.findByDescriptionAndTaskList(trimmedDescription, foundList)
+                        .filter(existingTask -> !existingTask.getId().equals(taskId))
+                                .ifPresent(existingTask -> {
+                                    throw new DescriptionAlreadyExistsException("A task with this description already exists in this list!");
+                                });
+
+        foundTaskItem.setDescription(dto.getDescription());
         return taskItemRepository.save(foundTaskItem);
     }
 
