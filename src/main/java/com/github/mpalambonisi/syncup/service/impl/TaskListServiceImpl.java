@@ -115,13 +115,17 @@ public class TaskListServiceImpl implements TaskListService {
                 .orElseThrow(() -> new ListNotFoundException("List not found!"));
 
         if (!foundList.getOwner().getUsername().equals(user.getUsername()))
-            throw new AccessDeniedException("User not authorised to update this task list title!");
+            throw new AccessDeniedException("Only the list owner can update the list title!");
 
-        if(taskListRepository.findByTitle(dto.getTitle()).isPresent())
-            throw new TitleAlreadyExistsException("Task list title already exists!");
+        String trimmedTitle = dto.getTitle().trim();
+        taskListRepository.findByTitleAndOwner(trimmedTitle, user)
+                        .filter(existingList -> !existingList.getId().equals(id))
+                                .ifPresent(existingList ->{
+                                    throw new TitleAlreadyExistsException("You already have a list with this title!");
+                                });
 
-        foundList.setTitle(dto.getTitle().trim());
+        foundList.setTitle(trimmedTitle);
 
-        return taskListRepository.save(foundList);
+        return taskListRepository.saveAndFlush(foundList);
     }
 }
