@@ -52,19 +52,8 @@ public class TaskListServiceImpl implements TaskListService {
     @Override
     @Transactional(readOnly = true)
     public TaskList getListById(Long id, User user) {
-
-        TaskList foundList = taskListRepository.findById(id)
-                .orElseThrow(() -> new ListNotFoundException("List not found!"));
-
-        boolean isOwner = foundList.getOwner().getUsername().equals(user.getUsername());
-        boolean isCollaborator = foundList.getCollaborators().contains(user);
-
-        if(isOwner || isCollaborator){
-            return foundList;
-        }
-        else{
-            throw new AccessDeniedException("User is not authorised to access this list!");
-        }
+        return taskListRepository.findByIdAndUserHasAccess(id, user)
+                .orElseThrow(() -> new ListNotFoundException("List not found or you don't have access to it!"));
     }
 
     @Override
