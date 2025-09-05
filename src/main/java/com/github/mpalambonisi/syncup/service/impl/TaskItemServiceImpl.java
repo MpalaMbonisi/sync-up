@@ -16,10 +16,6 @@ import com.github.mpalambonisi.syncup.service.TaskItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.SessionAttributes;
-
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -31,7 +27,7 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem saveTask(long listId, TaskItemCreateDTO dto, User user) {
-        TaskList foundList = checkListAvailabilityAndAccess(listId, user);
+        TaskList foundList = checkListAvailability(listId, user);
         String trimmedDescription = dto.getDescription().trim();
 
         if(taskItemRepository.findByDescriptionAndTaskList(trimmedDescription, foundList).isPresent()){
@@ -48,7 +44,7 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem updateTaskItemStatus(long listId, long taskId, TaskItemStatusDTO dto, User user) {
-        TaskList foundList = checkListAvailabilityAndAccess(listId, user);
+        TaskList foundList = checkListAvailability(listId, user);
 
         TaskItem foundTaskItem = taskItemRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
@@ -64,7 +60,7 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem updateTaskItemDescription(long listId, long taskId, TaskItemDescriptionDTO dto, User user) {
-        TaskList foundList = checkListAvailabilityAndAccess(listId, user);
+        TaskList foundList = checkListAvailability(listId, user);
 
         TaskItem foundTaskItem = taskItemRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
@@ -88,7 +84,7 @@ public class TaskItemServiceImpl implements TaskItemService {
     @Override
     @Transactional(readOnly = true)
     public TaskItem getTaskItemById(long listId, long taskId, User user) {
-        checkListAvailabilityAndAccess(listId, user);
+        checkListAvailability(listId, user);
 
         TaskItem foundTaskItem = taskItemRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
@@ -100,7 +96,7 @@ public class TaskItemServiceImpl implements TaskItemService {
         return foundTaskItem;
     }
 
-    private TaskList checkListAvailabilityAndAccess(long id, User user){
+    private TaskList checkListAvailability(long id, User user){
 
         return taskListRepository.findById(id)
                 .orElseThrow(() -> new ListNotFoundException("List not found!"));
