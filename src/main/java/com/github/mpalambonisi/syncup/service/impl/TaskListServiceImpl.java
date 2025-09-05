@@ -29,6 +29,7 @@ public class TaskListServiceImpl implements TaskListService {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<TaskList> getAllListForOwner(User user) {
         return taskListRepository.findAllByOwner(user);
     }
@@ -48,6 +49,7 @@ public class TaskListServiceImpl implements TaskListService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TaskList getListById(Long id, User user) {
 
         TaskList foundList = taskListRepository.findById(id)
@@ -113,6 +115,7 @@ public class TaskListServiceImpl implements TaskListService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Set<User> getAllCollaborators(Long id, User user) {
         TaskList foundTask = taskListRepository.findById(id)
                 .orElseThrow(() -> new ListNotFoundException("List not found!"));
