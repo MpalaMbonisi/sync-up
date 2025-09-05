@@ -7,6 +7,7 @@ import com.github.mpalambonisi.syncup.dto.request.TaskListTitleUpdateDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.exception.TitleAlreadyExistsException;
+import com.github.mpalambonisi.syncup.exception.UsernameExistsException;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
@@ -72,17 +73,23 @@ public class TaskListServiceImpl implements TaskListService {
         TaskList taskList = taskListRepository.findById(id)
                 .orElseThrow(() -> new ListNotFoundException("List not found!"));
 
-        String username = taskList.getOwner().getUsername();
-        if(!username.equals(user.getUsername()))
-            throw new AccessDeniedException("User is not authorised to add collaborators!");
+        if(!taskList.getOwner().getUsername().equals(user.getUsername()))
+            throw new AccessDeniedException("Only the list owner can add collaborators!");
 
-        for(String collaborator: dto.getCollaborators()){
-            User collabUser = userRepository.findByUsername(collaborator)
-                    .orElseThrow(() -> new UsernameNotFoundException("Collaborator username not found!"));
+        for(String collaboratorUsername: dto.getCollaborators()){
+            String normalisedUsername = collaboratorUsername.toLowerCase().trim();
+
+            // Don't add the owner as a collaborator
+            if(normalisedUsername.equals(user.getUsername())){
+                throw new UsernameExistsException("You cannot add owner as a collaborator!");
+            }
+            User collabUser = userRepository.findByUsername(normalisedUsername)
+                    .orElseThrow(() ->
+                            new UsernameNotFoundException("Collaborator username '" + normalisedUsername + "' not found!"));
             taskList.getCollaborators().add(collabUser);
         }
 
-        return taskListRepository.save(taskList).getCollaborators();
+        return taskListRepository.saveAndFlush(taskList).getCollaborators();
     }
 
     @Override
