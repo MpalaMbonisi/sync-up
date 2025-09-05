@@ -101,15 +101,8 @@ public class TaskItemServiceImpl implements TaskItemService {
     }
 
     private TaskList checkListAvailabilityAndAccess(long id, User user){
-        TaskList foundList = taskListRepository.findById(id)
+
+        return taskListRepository.findById(id)
                 .orElseThrow(() -> new ListNotFoundException("List not found!"));
-
-        boolean isOwner = foundList.getOwner().getUsername().equals(user.getUsername());
-        boolean isCollaborator = foundList.getCollaborators().contains(user);
-
-        if(!(isCollaborator || isOwner))
-            throw new AccessDeniedException("User is not authorised to access this list!");
-
-        return foundList;
     }
 }
