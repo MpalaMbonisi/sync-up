@@ -86,6 +86,7 @@ public class TaskItemServiceImpl implements TaskItemService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TaskItem getTaskItemById(long listId, long taskId, User user) {
         checkListAvailabilityAndAccess(listId, user);
 
