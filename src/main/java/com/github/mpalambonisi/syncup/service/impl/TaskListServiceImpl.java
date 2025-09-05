@@ -93,7 +93,8 @@ public class TaskListServiceImpl implements TaskListService {
         if (!foundTask.getOwner().getUsername().equals(user.getUsername()))
             throw new AccessDeniedException("Only the list owner can remove collaborators!");
 
-        User collaborator = userRepository.findByUsername(dto.getUsername())
+        String normalisedUsername = dto.getUsername().toLowerCase().trim();
+        User collaborator = userRepository.findByUsername(normalisedUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("Collaborator username not found!"));
 
         foundTask.getCollaborators().remove(collaborator);
