@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.SessionAttributes;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -31,9 +32,10 @@ public class TaskItemServiceImpl implements TaskItemService {
     @Override
     public TaskItem saveTask(long listId, TaskItemCreateDTO dto, User user) {
         TaskList foundList = checkListAvailabilityAndAccess(listId, user);
+        String trimmedDescription = dto.getDescription().trim();
 
-        if(taskItemRepository.findByDescription(dto.getDescription().trim()).isPresent()){
-            throw new DescriptionAlreadyExistsException("Task item description already exists!");
+        if(taskItemRepository.findByDescriptionAndTaskList(trimmedDescription, foundList).isPresent()){
+            throw new DescriptionAlreadyExistsException("A task with this description already exists in this list!");
         }
 
         TaskItem taskItem = new TaskItem();
@@ -41,7 +43,7 @@ public class TaskItemServiceImpl implements TaskItemService {
         taskItem.setTaskList(foundList);
         taskItem.setCompleted(false);
 
-        return taskItemRepository.save(taskItem);
+        return taskItemRepository.saveAndFlush(taskItem);
     }
 
     @Override
