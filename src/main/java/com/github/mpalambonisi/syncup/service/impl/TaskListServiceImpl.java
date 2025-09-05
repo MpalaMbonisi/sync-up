@@ -91,14 +91,13 @@ public class TaskListServiceImpl implements TaskListService {
                 .orElseThrow(() -> new ListNotFoundException("List not found!"));
 
         if (!foundTask.getOwner().getUsername().equals(user.getUsername()))
-            throw new AccessDeniedException("User is not authorised to remove collaborators!");
+            throw new AccessDeniedException("Only the list owner can remove collaborators!");
 
         User collaborator = userRepository.findByUsername(dto.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("Collaborator username not found!"));
 
         foundTask.getCollaborators().remove(collaborator);
-
-        taskListRepository.save(foundTask);
+        taskListRepository.saveAndFlush(foundTask);
     }
 
     @Override
