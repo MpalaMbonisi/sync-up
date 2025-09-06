@@ -53,14 +53,13 @@ public class TaskListServiceImpl implements TaskListService {
     @Override
     @Transactional(readOnly = true)
     public TaskList getListById(Long id, User user) {
-        return taskListRepository.findByIdAndUserHasAccess(id, user)
-                .orElseThrow(() -> new ListNotFoundException("List not found or you don't have access to it!"));
+        return checkListAvailabilityAndUserAccess(id, user);
     }
 
     @Override
     public void removeListById(Long id, User user) {
-        TaskList foundList = taskListRepository.findById(id)
-                .orElseThrow(() -> new ListNotFoundException("List not found!"));
+        TaskList foundList = taskListRepository.findByIdAndUserHasAccess(id, user)
+                .orElseThrow(() -> new ListNotFoundException("List not found or you don't have access to it!"));
 
         if(!foundList.getOwner().getUsername().equals(user.getUsername())){
             throw new AccessDeniedException("Only the list owner can delete this list!");
@@ -70,8 +69,7 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public Set<User> addCollaboratorsByUsername(Long id, AddCollaboratorsRequestDTO dto, User user) {
-        TaskList taskList = taskListRepository.findById(id)
-                .orElseThrow(() -> new ListNotFoundException("List not found!"));
+        TaskList taskList = checkListAvailabilityAndUserAccess(id, user);
 
         if(!taskList.getOwner().getUsername().equals(user.getUsername()))
             throw new AccessDeniedException("Only the list owner can add collaborators!");
@@ -94,8 +92,7 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public void removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user) {
-        TaskList foundTask = taskListRepository.findById(id)
-                .orElseThrow(() -> new ListNotFoundException("List not found!"));
+        TaskList foundTask = checkListAvailabilityAndUserAccess(id, user);
 
         if (!foundTask.getOwner().getUsername().equals(user.getUsername()))
             throw new AccessDeniedException("Only the list owner can remove collaborators!");
@@ -119,8 +116,7 @@ public class TaskListServiceImpl implements TaskListService {
 
     @Override
     public TaskList updateTaskListTitle(Long id, TaskListTitleUpdateDTO dto, User user) {
-        TaskList foundList = taskListRepository.findById(id)
-                .orElseThrow(() -> new ListNotFoundException("List not found!"));
+        TaskList foundList = checkListAvailabilityAndUserAccess(id, user);
 
         if (!foundList.getOwner().getUsername().equals(user.getUsername()))
             throw new AccessDeniedException("Only the list owner can update the list title!");
@@ -135,5 +131,11 @@ public class TaskListServiceImpl implements TaskListService {
         foundList.setTitle(trimmedTitle);
 
         return taskListRepository.saveAndFlush(foundList);
+    }
+
+    private TaskList checkListAvailabilityAndUserAccess(long id, User user){
+
+        return taskListRepository.findByIdAndUserHasAccess(id, user)
+                .orElseThrow(() -> new ListNotFoundException("List not found or you don't have access to it!"));
     }
 }
