@@ -63,11 +63,11 @@ public class TaskItemServiceTest {
         return taskList;
     }
 
-    private TaskItem createTaskItem(long id, TaskList taskList){
+    private TaskItem createTaskItem(long id, String description, TaskList taskList){
         TaskItem taskItem = new TaskItem();
         taskItem.setId(id);
         taskItem.setCompleted(false);
-        taskItem.setDescription("1kg Banana");
+        taskItem.setDescription(description);
         taskItem.setTaskList(taskList);
         return taskItem;
     }
@@ -81,7 +81,7 @@ public class TaskItemServiceTest {
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
-        when(taskItemRepository.findByDescription(description)).thenReturn(Optional.empty());
+        when(taskItemRepository.findByDescriptionAndTaskList(description.trim(), taskList)).thenReturn(Optional.empty());
         when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> {
             TaskItem task = invocation.getArgument(0);
             task.setId(1L); // Simulate DB generating ID
@@ -102,7 +102,7 @@ public class TaskItemServiceTest {
         // Verify interaction order
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
-        inOrder.verify(taskItemRepository).findByDescription(description);
+        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(description.trim(), taskList);
         inOrder.verify(taskItemRepository).save(any(TaskItem.class));
     }
 
@@ -119,7 +119,7 @@ public class TaskItemServiceTest {
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", collaborator);
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
-        when(taskItemRepository.findByDescription(description)).thenReturn(Optional.empty());
+        when(taskItemRepository.findByDescriptionAndTaskList(description.trim(), taskList)).thenReturn(Optional.empty());
         when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> {
             TaskItem task = invocation.getArgument(0);
             task.setId(1L); // Simulate DB generating ID
@@ -141,7 +141,7 @@ public class TaskItemServiceTest {
         // Verify interaction order
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
-        inOrder.verify(taskItemRepository).findByDescription(description);
+        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(description.trim(), taskList);
         inOrder.verify(taskItemRepository).save(any(TaskItem.class));
     }
 
@@ -166,7 +166,7 @@ public class TaskItemServiceTest {
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
-        inOrder.verify(taskItemRepository, never()).findByDescription(description);
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(description.trim(), taskList);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
@@ -187,7 +187,7 @@ public class TaskItemServiceTest {
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(invalidTaskListId);
-        inOrder.verify(taskItemRepository, never()).findByDescription(description);
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(description.trim(), taskList);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
@@ -204,7 +204,7 @@ public class TaskItemServiceTest {
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
-        when(taskItemRepository.findByDescription(duplicateDesc)).thenReturn(Optional.of(existingTaskItem));
+        when(taskItemRepository.findByDescriptionAndTaskList(duplicateDesc, taskList)).thenReturn(Optional.of(existingTaskItem));
 
         // Act & Assert
         DescriptionAlreadyExistsException exception = Assertions.assertThrows(DescriptionAlreadyExistsException.class,
@@ -214,7 +214,7 @@ public class TaskItemServiceTest {
         // Verify interaction order
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
-        inOrder.verify(taskItemRepository).findByDescription(duplicateDesc);
+        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(duplicateDesc, taskList);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
@@ -516,7 +516,7 @@ public class TaskItemServiceTest {
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
-        when(taskItemRepository.findByDescription(updatedDesc)).thenReturn(Optional.empty());
+        when(taskItemRepository.findByDescriptionAndTaskList(updatedDesc, taskList)).thenReturn(Optional.empty());
         when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
@@ -532,7 +532,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(taskItemId);
-        inOrder.verify(taskItemRepository).findByDescription(updatedDesc);
+        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(updatedDesc, taskList);
         inOrder.verify(taskItemRepository).save(any(TaskItem.class));
     }
 
@@ -552,7 +552,7 @@ public class TaskItemServiceTest {
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
-        when(taskItemRepository.findByDescription(updatedDesc)).thenReturn(Optional.empty());
+        when(taskItemRepository.findByDescriptionAndTaskList(updatedDesc, taskList)).thenReturn(Optional.empty());
         when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
@@ -568,7 +568,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(taskItemId);
-        inOrder.verify(taskItemRepository).findByDescription(updatedDesc);
+        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(updatedDesc, taskList);
         inOrder.verify(taskItemRepository).save(any(TaskItem.class));
     }
 
@@ -597,7 +597,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
-        inOrder.verify(taskItemRepository, never()).findByDescription(updatedDesc);
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, taskList);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
@@ -614,7 +614,7 @@ public class TaskItemServiceTest {
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
-        when(taskItemRepository.findByDescription(duplicateDesc)).thenReturn(Optional.of(taskItem));
+        when(taskItemRepository.findByDescriptionAndTaskList(duplicateDesc, taskList)).thenReturn(Optional.of(taskItem));
 
         // Act & Assert
         DescriptionAlreadyExistsException exception = Assertions.assertThrows(DescriptionAlreadyExistsException.class,
@@ -625,7 +625,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(taskItemId);
-        inOrder.verify(taskItemRepository).findByDescription(duplicateDesc);
+        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(duplicateDesc, taskList);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
@@ -648,7 +648,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(invalidTaskListId);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
-        inOrder.verify(taskItemRepository, never()).findByDescription(updatedDesc);
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, any(TaskList.class));
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
@@ -674,7 +674,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
-        inOrder.verify(taskItemRepository, never()).findByDescription(updatedDesc);
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, taskList);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 
@@ -692,7 +692,7 @@ public class TaskItemServiceTest {
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(allowedList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskFromForbiddenList));
-        when(taskItemRepository.findByDescription(updatedDesc)).thenReturn(Optional.empty());
+        when(taskItemRepository.findByDescriptionAndTaskList(updatedDesc, allowedList)).thenReturn(Optional.empty());
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
@@ -703,7 +703,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(taskItemId);
-        inOrder.verify(taskItemRepository).findByDescription(updatedDesc);
+        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(updatedDesc, allowedList);
         inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
     }
 }
