@@ -27,7 +27,7 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem saveTask(long listId, TaskItemCreateDTO dto, User user) {
-        TaskList foundList = checkListAvailability(listId, user);
+        TaskList foundList = checkListAvailabilityAndUserAccess(listId, user);
         String trimmedDescription = dto.getDescription().trim();
 
         if(taskItemRepository.findByDescriptionAndTaskList(trimmedDescription, foundList).isPresent()){
@@ -44,7 +44,7 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem updateTaskItemStatus(long listId, long taskId, TaskItemStatusDTO dto, User user) {
-        TaskList foundList = checkListAvailability(listId, user);
+        TaskList foundList = checkListAvailabilityAndUserAccess(listId, user);
 
         TaskItem foundTaskItem = taskItemRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
@@ -60,7 +60,7 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem updateTaskItemDescription(long listId, long taskId, TaskItemDescriptionDTO dto, User user) {
-        TaskList foundList = checkListAvailability(listId, user);
+        TaskList foundList = checkListAvailabilityAndUserAccess(listId, user);
 
         TaskItem foundTaskItem = taskItemRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
@@ -84,7 +84,7 @@ public class TaskItemServiceImpl implements TaskItemService {
     @Override
     @Transactional(readOnly = true)
     public TaskItem getTaskItemById(long listId, long taskId, User user) {
-        checkListAvailability(listId, user);
+        checkListAvailabilityAndUserAccess(listId, user);
 
         TaskItem foundTaskItem = taskItemRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
@@ -96,9 +96,9 @@ public class TaskItemServiceImpl implements TaskItemService {
         return foundTaskItem;
     }
 
-    private TaskList checkListAvailability(long id, User user){
+    private TaskList checkListAvailabilityAndUserAccess(long id, User user){
 
-        return taskListRepository.findById(id)
-                .orElseThrow(() -> new ListNotFoundException("List not found!"));
+        return taskListRepository.findByIdAndUserHasAccess(id, user)
+                .orElseThrow(() -> new ListNotFoundException("List not found or you don't have access to it!"));
     }
 }
