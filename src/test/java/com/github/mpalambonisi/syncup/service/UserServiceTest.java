@@ -43,21 +43,28 @@ public class UserServiceTest {
         when(userRepository.findByUsername("mbonisimpala")).thenReturn(Optional.empty());
         // encode password
         when(passwordEncoder.encode("StrongPassword1234")).thenReturn("hashedPassword");
-        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(1L);
+            return user;
+        });
 
         // Act
         User savedUser = userService.registerUser(registrationDTO);
 
         // Assert
         assertThat(savedUser).isNotNull();
-        assertThat(savedUser.getEmail()).isEqualTo(registrationDTO.getEmail());
-        assertThat(savedUser.getUsername()).isEqualTo(registrationDTO.getUsername());
+        assertThat(savedUser.getId()).isEqualTo(1L);
+        assertThat(savedUser.getEmail()).isEqualTo("mbonisim123@gmail.com");
+        assertThat(savedUser.getUsername()).isEqualTo("mbonisimpala");
+        assertThat(savedUser.getFirstName()).isEqualTo("Mbonisi");
+        assertThat(savedUser.getLastName()).isEqualTo("Mpala");
         assertThat(savedUser.getPassword()).isEqualTo("hashedPassword");
 
         // Verify
-        verify(userRepository, times(1)).saveAndFlush(any(User.class));
-        verify(passwordEncoder, times(1)).encode("StrongPassword1234");
+        verify(userRepository).findByUsername("mbonisimpala");
+        verify(passwordEncoder).encode("StrongPassword1234");
+        verify(userRepository).saveAndFlush(any(User.class));
     }
 
     @Test
@@ -71,7 +78,9 @@ public class UserServiceTest {
                 .password("StrongPassword1234")
                 .build();
         // pretend the username does exist in the database
-        when(userRepository.findByUsername("mbonisimpala")).thenReturn(Optional.of(new User()));
+        User existingUser = new User();
+        existingUser.setUsername("mbonisimpala");
+        when(userRepository.findByUsername("mbonisimpala")).thenReturn(Optional.of(existingUser));
 
         // Act & Assert
         Assertions.assertThrows(UsernameExistsException.class, () -> {
@@ -79,6 +88,7 @@ public class UserServiceTest {
         }, "Username already in use.");
 
         // Verify
+        verify(userRepository).findByUsername("mbonisimpala");
         verify(userRepository, never()).saveAndFlush(any());
         verify(passwordEncoder, never()).encode(anyString());
     }
@@ -87,24 +97,27 @@ public class UserServiceTest {
     void registerUser_withUnsanitisedData_shouldNormaliseAndSaveUser(){
         // Arrange
         UserRegistrationDTO registrationDTO = UserRegistrationDTO.builder()
-                .firstName("MBONISI") // dirty data
-                .lastName("mPaLa")
-                .username("mboNisiMPALA")
-                .email("mBONISIm123@gmaIL.COM")
-                .password("StrongPassword1234") // except for the password
+                .firstName("  MBONISI  ") // dirty data with spaces
+                .lastName("  mPaLa  ")
+                .username("  mboNisiMPALA  ")
+                .email("  mBONISIm123@gmaIL.COM  ")
+                .password("StrongPassword1234") // password should not be normalized
                 .build();
         // pretend the username does not exist in the database
         when(userRepository.findByUsername("mbonisimpala")).thenReturn(Optional.empty());
         // encode password
         when(passwordEncoder.encode("StrongPassword1234")).thenReturn("hashedPassword");
-        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(1L);
+            return user;
+        });
         // Act
         User savedUser = userService.registerUser(registrationDTO);
 
         // Assert
         assertThat(savedUser).isNotNull();
+        assertThat(savedUser.getId()).isEqualTo(1L);
         assertThat(savedUser.getEmail()).isEqualTo("mbonisim123@gmail.com");
         assertThat(savedUser.getUsername()).isEqualTo("mbonisimpala");
         assertThat(savedUser.getFirstName()).isEqualTo("Mbonisi");
@@ -112,8 +125,9 @@ public class UserServiceTest {
         assertThat(savedUser.getPassword()).isEqualTo("hashedPassword");
 
         // Verify
-        verify(userRepository, times(1)).saveAndFlush(any(User.class));
-        verify(passwordEncoder, times(1)).encode("StrongPassword1234");
+        verify(userRepository).findByUsername("mbonisimpala");
+        verify(passwordEncoder).encode("StrongPassword1234");
+        verify(userRepository).saveAndFlush(any(User.class));
 
     }
 
