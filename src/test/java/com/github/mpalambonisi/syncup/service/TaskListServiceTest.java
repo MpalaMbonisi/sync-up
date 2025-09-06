@@ -16,8 +16,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -30,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -92,7 +89,7 @@ public class TaskListServiceTest {
         taskList02.setTitle("Clothing Wishlist");
 
         List<TaskList> list = List.of(taskList01, taskList02);
-        when(taskListRepo.findAllByOwner(ownerUser)).thenReturn(list);
+        when(taskListRepo.findAllByOwnerOrCollaborator(ownerUser)).thenReturn(list);
 
         // Act
         List<TaskList> result = taskListService.getAllListForOwner(ownerUser);
@@ -101,14 +98,14 @@ public class TaskListServiceTest {
         assertThat(result).isNotEmpty();
 
         // Verify
-        verify(taskListRepo, times(1)).findAllByOwner(ownerUser);
+        verify(taskListRepo, times(1)).findAllByOwnerOrCollaborator(ownerUser);
 
     }
 
     @Test
     void getAllListForOwner_whenOwnerHasNoList_shouldReturnEmptyList(){
         // Arrange
-        when(taskListRepo.findAllByOwner(ownerUser)).thenReturn(List.of());
+        when(taskListRepo.findAllByOwnerOrCollaborator(ownerUser)).thenReturn(List.of());
 
         // Act
         List<TaskList> result = taskListService.getAllListForOwner(ownerUser);
@@ -117,7 +114,7 @@ public class TaskListServiceTest {
         assertThat(result).isEmpty();
 
         // Verify
-        verify(taskListRepo, times(1)).findAllByOwner(ownerUser);
+        verify(taskListRepo, times(1)).findAllByOwnerOrCollaborator(ownerUser);
 
     }
 
@@ -130,7 +127,7 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
         taskList.setId(id);
 
-        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(id, ownerUser)).thenReturn(Optional.of(taskList));
 
         // Act
         TaskList result = taskListService.getListById(1L, ownerUser);
@@ -141,7 +138,7 @@ public class TaskListServiceTest {
         assertThat(result.getOwner().getUsername()).isEqualTo(ownerUser.getUsername());
 
         // Verify
-        verify(taskListRepo, times(1)).findById(1L);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(id, ownerUser);
 
     }
 
@@ -155,7 +152,7 @@ public class TaskListServiceTest {
         tasklist.getCollaborators().add(collaboratorUser);
         tasklist.setId(id);
 
-        when(taskListRepo.findById(id)).thenReturn(Optional.of(tasklist));
+        when(taskListRepo.findByIdAndUserHasAccess(id, collaboratorUser)).thenReturn(Optional.of(tasklist));
 
         // Act
         TaskList result = taskListService.getListById(id, collaboratorUser);
@@ -167,11 +164,11 @@ public class TaskListServiceTest {
         assertThat(result.getOwner().getUsername()).isEqualTo(ownerUser.getUsername());
 
         // Verify
-        verify(taskListRepo, times(1)).findById(id);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(id, collaboratorUser);
     }
 
     @Test
-    void getListById_whenUserIsNotAuthorised_shouldThrowAccessDeniedException(){
+    void getListById_whenUserIsNotAuthorised_shouldListNotFoundException(){
         // Arrange
         long id = 1L;
         TaskList taskList = new TaskList();
@@ -179,32 +176,31 @@ public class TaskListServiceTest {
         taskList.setTitle("Grocery Shopping List");
         taskList.setId(id);
 
-        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(id, unauthorisedUser)).thenReturn(Optional.empty());
 
         // Act & Assert
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskListService.getListById(id, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify that the repo was still called to try and fetch the list
-        verify(taskListRepo, times(1)).findById(id);
-
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(id, unauthorisedUser);
     }
 
     @Test
     void getListById_withNonexistentListId_shouldThrowListNotFoundException(){
         // Arrange
         long invalidId = 999L;
-        when(taskListRepo.findById(invalidId)).thenReturn(Optional.empty());
+        when(taskListRepo.findByIdAndUserHasAccess(invalidId, ownerUser)).thenReturn(Optional.empty());
 
         // Assert & Act
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class, () -> {
             taskListService.getListById(invalidId, ownerUser);
         });
-        assertThat(exception.getMessage()).isEqualTo("List not found!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
-        verify(taskListRepo, times(1)).findById(invalidId);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(invalidId, ownerUser);
     }
 
     @Test
@@ -216,14 +212,14 @@ public class TaskListServiceTest {
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
 
-        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(id, ownerUser)).thenReturn(Optional.of(taskList));
         doNothing().when(taskListRepo).deleteById(id);
 
         // Act
         taskListService.removeListById(id, ownerUser);
 
         // Verify
-        verify(taskListRepo, times(1)).findById(id);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(id, ownerUser);
         verify(taskListRepo, times(1)).deleteById(id);
     }
 
@@ -236,15 +232,15 @@ public class TaskListServiceTest {
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
 
-        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(id, unauthorisedUser)).thenReturn(Optional.empty());
 
         // Act
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskListService.removeListById(id, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access to delete this list!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
-        verify(taskListRepo, times(1)).findById(id);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(id, unauthorisedUser);
         verify(taskListRepo, never()).deleteById(id);
     }
 
@@ -258,15 +254,15 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
         taskList.getCollaborators().add(collaboratorUser);
 
-        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(id, collaboratorUser)).thenReturn(Optional.of(taskList));
 
         // Act
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskListService.removeListById(id, collaboratorUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access to delete this list!");
+        assertThat(exception.getMessage()).isEqualTo("Only the list owner can delete this list!");
 
         // Verify
-        verify(taskListRepo, times(1)).findById(id);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(id, collaboratorUser);
         verify(taskListRepo, never()).deleteById(id);
     }
 
@@ -275,15 +271,15 @@ public class TaskListServiceTest {
         // Arrange
         long invalidId = 999L;
 
-        when(taskListRepo.findById(invalidId)).thenReturn(Optional.empty());
+        when(taskListRepo.findByIdAndUserHasAccess(invalidId, ownerUser)).thenReturn(Optional.empty());
 
         // Act
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskListService.removeListById(invalidId, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("List not found!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
-        verify(taskListRepo, times(1)).findById(invalidId);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(invalidId, ownerUser);
         verify(taskListRepo, never()).deleteById(invalidId);
     }
 
@@ -341,15 +337,15 @@ public class TaskListServiceTest {
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
 
-        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskListService.addCollaboratorsByUsername(taskListId, dto, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to add collaborators!");
+        assertThat(exception.getMessage()).isEqualTo("Only the list owner can add collaborators!");
 
         // verify
-        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
         verify(userRepository, never()).findByUsername("johnsmith");
         verify(userRepository, never()).findByUsername("nicolencube");
     }
@@ -373,7 +369,7 @@ public class TaskListServiceTest {
         // Act & Assert
         UsernameNotFoundException exception = Assertions.assertThrows(UsernameNotFoundException.class,
                 () -> taskListService.addCollaboratorsByUsername(taskListId, dto, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("Collaborator username not found!");
+        assertThat(exception.getMessage()).isEqualTo("Collaborator username 'karensanders' not found!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepo, userRepository);
@@ -390,15 +386,15 @@ public class TaskListServiceTest {
         usernames.add("nicolencube");
         AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(usernames);
 
-        when(taskListRepo.findById(invalidId)).thenReturn(Optional.empty());
+        when(taskListRepo.findByIdAndUserHasAccess(invalidId, ownerUser)).thenReturn(Optional.empty());
 
         // Act
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskListService.addCollaboratorsByUsername(invalidId, dto, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("List not found!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
-        verify(taskListRepo, times(1)).findById(invalidId);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(invalidId, ownerUser);
         verify(userRepository, never()).findByUsername("johnsmith");
         verify(userRepository, never()).findByUsername("nicolencube");
     }
@@ -434,7 +430,8 @@ public class TaskListServiceTest {
     @Test
     void removeCollaboratorByUsername_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
         // Arrange
-        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
+        String collaboratorUsername = "johnsmith";
+        RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO(collaboratorUsername);
 
         long taskListId = 1L;
         TaskList taskList = new TaskList();
@@ -443,17 +440,17 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
         taskList.getCollaborators().add(collaboratorUser);
 
-        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.empty());
 
         // Act & Assert
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskListService.removeCollaboratorByUsername(taskListId, dto, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to remove collaborators!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // verify
-        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
-        verify(userRepository, never()).findByUsername("johnsmith");
-        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
+        verify(userRepository, never()).findByUsername(any());
+        verify(taskListRepo, never()).saveAndFlush(any());
     }
 
     @Test
@@ -480,7 +477,7 @@ public class TaskListServiceTest {
         // Verify
         verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
         verify(userRepository, times(1)).findByUsername(collaboratorUsername);
-        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        verify(taskListRepo, never()).saveAndFlush(any());
     }
 
     @Test
@@ -489,17 +486,17 @@ public class TaskListServiceTest {
         long invalidId = 999L;
         RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
 
-        when(taskListRepo.findById(invalidId)).thenReturn(Optional.empty());
+        when(taskListRepo.findByIdAndUserHasAccess(invalidId, ownerUser)).thenReturn(Optional.empty());
 
         // Act
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskListService.removeCollaboratorByUsername(invalidId, dto, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("List not found!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
-        verify(taskListRepo, times(1)).findById(invalidId);
-        verify(userRepository, never()).findByUsername("johnsmith");
-        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(invalidId, ownerUser);
+        verify(userRepository, never()).findByUsername(any());
+        verify(taskListRepo, never()).saveAndFlush(any());
     }
 
     @Test
@@ -529,7 +526,7 @@ public class TaskListServiceTest {
 
         // Verify
         verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
-        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        verify(taskListRepo, never()).saveAndFlush(any());
     }
 
     @Test
@@ -547,32 +544,32 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
         taskList.getCollaborators().addAll(collaborators);
 
-        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.empty());
 
         // Act & Assert
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskListService.getAllCollaborators(taskListId, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to retrieve all collaborators!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
-        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
-        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
+        verify(taskListRepo, never()).saveAndFlush(any());
     }
 
     @Test
     void getAllCollaborators_whenTaskListIdIsNonexistent_shouldThrowListNotFoundException(){
         // Arrange
         long invalidId = 999L;
-        when(taskListRepo.findById(invalidId)).thenReturn(Optional.empty());
+        when(taskListRepo.findByIdAndUserHasAccess(invalidId, ownerUser)).thenReturn(Optional.empty());
 
         // Act
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskListService.getAllCollaborators(invalidId, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("List not found!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
-        verify(taskListRepo, times(1)).findById(invalidId);
-        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(invalidId, ownerUser);
+        verify(taskListRepo, never()).saveAndFlush(any());
     }
 
     @Test
@@ -594,7 +591,7 @@ public class TaskListServiceTest {
 
         // Verify
         verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
-        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        verify(taskListRepo, never()).saveAndFlush(any());
     }
 
     @Test
@@ -610,8 +607,8 @@ public class TaskListServiceTest {
 
         TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
 
-        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
-        when(taskListRepo.findByTitle(updatedTitle)).thenReturn(Optional.empty());
+        when(taskListRepo.findByIdAndUserHasAccess(id, ownerUser)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByTitleAndOwner(updatedTitle, ownerUser)).thenReturn(Optional.empty());
         when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
@@ -624,8 +621,8 @@ public class TaskListServiceTest {
 
         // Verify
         InOrder inorder = inOrder(taskListRepo);
-        inorder.verify(taskListRepo).findById(id);
-        inorder.verify(taskListRepo).findByTitle(updatedTitle);
+        inorder.verify(taskListRepo).findByIdAndUserHasAccess(id, ownerUser);
+        inorder.verify(taskListRepo).findByTitleAndOwner(updatedTitle, ownerUser);
         inorder.verify(taskListRepo).saveAndFlush(any(TaskList.class));
     }
 
@@ -642,18 +639,18 @@ public class TaskListServiceTest {
         String updatedTitle = "Shoe wishlist";
         TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
 
-        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(id, collaboratorUser)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskListService.updateTaskListTitle(id, dto, collaboratorUser));
-        assertThat(exception.getMessage()).isEqualTo("User not authorised to update this task list title!");
+        assertThat(exception.getMessage()).isEqualTo("Only the list owner can update the list title!");
 
         // Verify
         InOrder inorder = inOrder(taskListRepo);
-        inorder.verify(taskListRepo).findById(id);
-        inorder.verify(taskListRepo, never()).findByTitle(updatedTitle);
-        inorder.verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        inorder.verify(taskListRepo).findByIdAndUserHasAccess(id, collaboratorUser);
+        inorder.verify(taskListRepo, never()).findByTitleAndOwner(any(), any());
+        inorder.verify(taskListRepo, never()).saveAndFlush(any());
     }
 
     @Test
@@ -668,18 +665,18 @@ public class TaskListServiceTest {
         String updatedTitle = "Shoe wishlist";
         TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
 
-        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(id, unauthorisedUser)).thenReturn(Optional.empty());
 
         // Act & Assert
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskListService.updateTaskListTitle(id, dto, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User not authorised to update this task list title!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
         InOrder inorder = inOrder(taskListRepo);
-        inorder.verify(taskListRepo).findById(id);
-        inorder.verify(taskListRepo, never()).findByTitle(updatedTitle);
-        inorder.verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        inorder.verify(taskListRepo).findByIdAndUserHasAccess(id, unauthorisedUser);
+        inorder.verify(taskListRepo, never()).findByTitleAndOwner(any(), any());
+        inorder.verify(taskListRepo, never()).saveAndFlush(any());
     }
 
     @Test
@@ -691,22 +688,27 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
         taskList.setId(id);
 
+        TaskList otherList = new TaskList();
+        otherList.setTitle("Grocery Shopping List");
+        otherList.setOwner(ownerUser);
+        otherList.setId(2L);
+
         String updatedTitle = "Grocery Shopping List";
         TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
 
-        when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
-        when(taskListRepo.findByTitle(updatedTitle)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(id, ownerUser)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByTitleAndOwner(updatedTitle, ownerUser)).thenReturn(Optional.of(otherList));
 
         // Act & Assert
         TitleAlreadyExistsException exception = Assertions.assertThrows(TitleAlreadyExistsException.class,
                 () -> taskListService.updateTaskListTitle(id, dto, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("Task list title already exists!");
+        assertThat(exception.getMessage()).isEqualTo("You already have a list with this title!");
 
         // Verify
         InOrder inorder = inOrder(taskListRepo);
-        inorder.verify(taskListRepo).findById(id);
-        inorder.verify(taskListRepo).findByTitle(updatedTitle);
-        inorder.verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        inorder.verify(taskListRepo).findByIdAndUserHasAccess(id, ownerUser);
+        inorder.verify(taskListRepo).findByTitleAndOwner(updatedTitle, ownerUser);
+        inorder.verify(taskListRepo, never()).saveAndFlush(any());
     }
 
     @Test
@@ -717,17 +719,17 @@ public class TaskListServiceTest {
         String updatedTitle = "Grocery Shopping List";
         TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(updatedTitle);
 
-        when(taskListRepo.findById(invalidTaskListId)).thenReturn(Optional.empty());
+        when(taskListRepo.findByIdAndUserHasAccess(invalidTaskListId, ownerUser)).thenReturn(Optional.empty());
 
         // Act & Assert
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskListService.updateTaskListTitle(invalidTaskListId, dto, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("List not found!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
         InOrder inorder = inOrder(taskListRepo);
-        inorder.verify(taskListRepo).findById(invalidTaskListId);
-        inorder.verify(taskListRepo, never()).findByTitle(updatedTitle);
-        inorder.verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
+        inorder.verify(taskListRepo).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
+        inorder.verify(taskListRepo, never()).findByTitleAndOwner(any(), any());
+        inorder.verify(taskListRepo, never()).saveAndFlush(any());
     }
 }
