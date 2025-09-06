@@ -55,7 +55,7 @@ public class TaskItemServiceImpl implements TaskItemService {
         }
 
         foundTaskItem.setCompleted(dto.isCompleted());
-        return taskItemRepository.save(foundTaskItem);
+        return taskItemRepository.saveAndFlush(foundTaskItem);
     }
 
     @Override
@@ -78,7 +78,7 @@ public class TaskItemServiceImpl implements TaskItemService {
                                 });
 
         foundTaskItem.setDescription(dto.getDescription());
-        return taskItemRepository.save(foundTaskItem);
+        return taskItemRepository.saveAndFlush(foundTaskItem);
     }
 
     @Override
