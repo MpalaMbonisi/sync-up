@@ -82,7 +82,7 @@ public class TaskItemServiceTest {
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findByDescriptionAndTaskList(description.trim(), taskList)).thenReturn(Optional.empty());
-        when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> {
+        when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> {
             TaskItem task = invocation.getArgument(0);
             task.setId(1L); // Simulate DB generating ID
             return task;
@@ -103,7 +103,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(description.trim(), taskList);
-        inOrder.verify(taskItemRepository).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -120,7 +120,7 @@ public class TaskItemServiceTest {
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findByDescriptionAndTaskList(description.trim(), taskList)).thenReturn(Optional.empty());
-        when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> {
+        when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> {
             TaskItem task = invocation.getArgument(0);
             task.setId(1L); // Simulate DB generating ID
             return task;
@@ -142,7 +142,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(description.trim(), taskList);
-        inOrder.verify(taskItemRepository).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -167,7 +167,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(description.trim(), taskList);
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -188,7 +188,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(invalidTaskListId);
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(description.trim(), taskList);
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -215,7 +215,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(duplicateDesc, taskList);
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -228,7 +228,7 @@ public class TaskItemServiceTest {
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
-        when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         TaskItem savedTaskItem = taskItemService.updateTaskItemStatus(taskListId, taskItemId, dto, ownerUser);
@@ -243,7 +243,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(taskItemId);
-        inOrder.verify(taskItemRepository).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -259,7 +259,7 @@ public class TaskItemServiceTest {
 
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
-        when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         TaskItem savedTaskItem = taskItemService.updateTaskItemStatus(taskListId, taskItemId, dto, collaborator);
@@ -274,7 +274,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(taskItemId);
-        inOrder.verify(taskItemRepository).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -298,7 +298,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -318,7 +318,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(invalidTaskListId);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -340,7 +340,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -517,7 +517,7 @@ public class TaskItemServiceTest {
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
         when(taskItemRepository.findByDescriptionAndTaskList(updatedDesc, taskList)).thenReturn(Optional.empty());
-        when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         TaskItem resultTaskItem = taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto,ownerUser);
@@ -533,7 +533,7 @@ public class TaskItemServiceTest {
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(updatedDesc, taskList);
-        inOrder.verify(taskItemRepository).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -553,7 +553,7 @@ public class TaskItemServiceTest {
         when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
         when(taskItemRepository.findByDescriptionAndTaskList(updatedDesc, taskList)).thenReturn(Optional.empty());
-        when(taskItemRepository.save(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         TaskItem resultTaskItem = taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto,collaborator);
@@ -569,7 +569,7 @@ public class TaskItemServiceTest {
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(updatedDesc, taskList);
-        inOrder.verify(taskItemRepository).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -598,7 +598,7 @@ public class TaskItemServiceTest {
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, taskList);
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -626,7 +626,7 @@ public class TaskItemServiceTest {
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(duplicateDesc, taskList);
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -649,7 +649,7 @@ public class TaskItemServiceTest {
         inOrder.verify(taskListRepository).findById(invalidTaskListId);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, any(TaskList.class));
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -675,7 +675,7 @@ public class TaskItemServiceTest {
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, taskList);
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -704,6 +704,6 @@ public class TaskItemServiceTest {
         inOrder.verify(taskListRepository).findById(taskListId);
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(updatedDesc, allowedList);
-        inOrder.verify(taskItemRepository, never()).save(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 }

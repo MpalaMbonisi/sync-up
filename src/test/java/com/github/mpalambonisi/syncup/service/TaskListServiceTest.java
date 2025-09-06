@@ -60,7 +60,7 @@ public class TaskListServiceTest {
         TaskListCreateDTO dto = TaskListCreateDTO.builder().title("Grocery Shopping List").build();
 
         // the save method should return the TaskList object it was passed
-        when(taskListRepo.save(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         TaskList taskListResult = taskListService.saveTaskList(ownerUser, dto);
@@ -71,7 +71,7 @@ public class TaskListServiceTest {
         assertThat(taskListResult.getOwner()).isEqualTo(ownerUser);
 
         // Verify
-        verify(taskListRepo, times(1)).save(any(TaskList.class));
+        verify(taskListRepo, times(1)).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -313,7 +313,7 @@ public class TaskListServiceTest {
         AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(usernames);
 
         when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
-        when(taskListRepo.save(taskList)).thenReturn(taskList);
+        when(taskListRepo.saveAndFlush(taskList)).thenReturn(taskList);
         when(userRepository.findByUsername(collaborator01.getUsername())).thenReturn(Optional.of(collaborator01));
         when(userRepository.findByUsername(collaborator02.getUsername())).thenReturn(Optional.of(collaborator02));
 
@@ -439,7 +439,7 @@ public class TaskListServiceTest {
         // Verify
         verify(taskListRepo, times(1)).findById(taskListId);
         verify(userRepository, times(1)).findByUsername(collaboratorUsername);
-        verify(taskListRepo, times(1)).save(taskList);
+        verify(taskListRepo, times(1)).saveAndFlush(taskList);
     }
 
     @Test
@@ -468,7 +468,7 @@ public class TaskListServiceTest {
         // verify
         verify(taskListRepo, times(1)).findById(taskListId);
         verify(userRepository, never()).findByUsername("johnsmith");
-        verify(taskListRepo, never()).save(any(TaskList.class));
+        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -495,7 +495,7 @@ public class TaskListServiceTest {
         // Verify
         verify(taskListRepo, times(1)).findById(taskListId);
         verify(userRepository, times(1)).findByUsername(collaboratorUsername);
-        verify(taskListRepo, never()).save(any(TaskList.class));
+        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -514,7 +514,7 @@ public class TaskListServiceTest {
         // Verify
         verify(taskListRepo, times(1)).findById(invalidId);
         verify(userRepository, never()).findByUsername("johnsmith");
-        verify(taskListRepo, never()).save(any(TaskList.class));
+        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -544,7 +544,7 @@ public class TaskListServiceTest {
 
         // Verify
         verify(taskListRepo, times(1)).findById(taskListId);
-        verify(taskListRepo, never()).save(any(TaskList.class));
+        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -574,7 +574,7 @@ public class TaskListServiceTest {
 
         // Verify
         verify(taskListRepo, times(1)).findById(taskListId);
-        verify(taskListRepo, never()).save(any(TaskList.class));
+        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -590,7 +590,7 @@ public class TaskListServiceTest {
 
         // Verify
         verify(taskListRepo, times(1)).findById(invalidId);
-        verify(taskListRepo, never()).save(any(TaskList.class));
+        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -612,7 +612,7 @@ public class TaskListServiceTest {
 
         // Verify
         verify(taskListRepo, times(1)).findById(taskListId);
-        verify(taskListRepo, never()).save(any(TaskList.class));
+        verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -630,7 +630,7 @@ public class TaskListServiceTest {
 
         when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
         when(taskListRepo.findByTitle(updatedTitle)).thenReturn(Optional.empty());
-        when(taskListRepo.save(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         TaskList resultTaskList = taskListService.updateTaskListTitle(id, dto, ownerUser);
@@ -644,7 +644,7 @@ public class TaskListServiceTest {
         InOrder inorder = inOrder(taskListRepo);
         inorder.verify(taskListRepo).findById(id);
         inorder.verify(taskListRepo).findByTitle(updatedTitle);
-        inorder.verify(taskListRepo).save(any(TaskList.class));
+        inorder.verify(taskListRepo).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -674,7 +674,7 @@ public class TaskListServiceTest {
         InOrder inorder = inOrder(taskListRepo);
         inorder.verify(taskListRepo).findById(id);
         inorder.verify(taskListRepo, never()).findByTitle(updatedTitle);
-        inorder.verify(taskListRepo, never()).save(any(TaskList.class));
+        inorder.verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -703,7 +703,7 @@ public class TaskListServiceTest {
         InOrder inorder = inOrder(taskListRepo);
         inorder.verify(taskListRepo).findById(id);
         inorder.verify(taskListRepo, never()).findByTitle(updatedTitle);
-        inorder.verify(taskListRepo, never()).save(any(TaskList.class));
+        inorder.verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -730,7 +730,7 @@ public class TaskListServiceTest {
         InOrder inorder = inOrder(taskListRepo);
         inorder.verify(taskListRepo).findById(id);
         inorder.verify(taskListRepo).findByTitle(updatedTitle);
-        inorder.verify(taskListRepo, never()).save(any(TaskList.class));
+        inorder.verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
     @Test
@@ -752,6 +752,6 @@ public class TaskListServiceTest {
         InOrder inorder = inOrder(taskListRepo);
         inorder.verify(taskListRepo).findById(invalidTaskListId);
         inorder.verify(taskListRepo, never()).findByTitle(updatedTitle);
-        inorder.verify(taskListRepo, never()).save(any(TaskList.class));
+        inorder.verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 }
