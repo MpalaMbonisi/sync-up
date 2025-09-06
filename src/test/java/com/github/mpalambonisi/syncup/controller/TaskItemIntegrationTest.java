@@ -181,7 +181,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void createTask_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void createTask_asUnauthorisedUser_shouldReturn404NotFound() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", encoder.encode("VeryStrongPassword"));
 
@@ -199,8 +199,8 @@ public class TaskItemIntegrationTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-Action verification
         long countAfter = taskItemRepository.count();
@@ -245,7 +245,7 @@ public class TaskItemIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
-                .andExpect(jsonPath("$.message").value("List not found!"));
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-Action verification
         long countAfter = taskItemRepository.count();
@@ -274,28 +274,14 @@ public class TaskItemIntegrationTest {
     @Test
     void createTask_withDuplicateDescription_shouldReturn409Conflict() throws Exception{
         // Arrange
-        TaskList existingTaskList = assertValidTaskListCreation(
+        TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave(null),
-                ownerUser,
-                null);
+                ownerUser, null);
         TaskItem existingTaskItem = assertValidTaskItemCreation(
-                createTaskItemAndSave(existingTaskList), existingTaskList);
+                createTaskItemAndSave(savedTaskList), savedTaskList);
 
         String duplicateDesc = existingTaskItem.getDescription();
         TaskItemCreateDTO dto = new TaskItemCreateDTO(duplicateDesc);
-
-        // create and save a task list
-        TaskList savedTaskList = new TaskList();
-        savedTaskList.setTitle("Wishlist");
-        savedTaskList.setOwner(ownerUser);
-        taskListRepository.save(savedTaskList);
-
-        // assert saved task list
-        assertThat(savedTaskList).isNotNull();
-        assertThat(savedTaskList.getId()).isNotNull();
-        assertThat(savedTaskList.getOwner()).isEqualTo(ownerUser);
-        assertThat(savedTaskList.getTitle()).isEqualTo("Wishlist");
-
         long taskListId = savedTaskList.getId();
         long countBefore = taskItemRepository.count();
 
@@ -305,7 +291,7 @@ public class TaskItemIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Task item description already exists!"));
+                .andExpect(jsonPath("$.message").value("A task with this description already exists in this list!"));
 
         // Post-Action verification
         long countAfter = taskItemRepository.count();
@@ -374,7 +360,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void updateTaskItemStatus_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void updateTaskItemStatus_asUnauthorisedUser_shouldReturn404NotFound() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", encoder.encode("VeryStrongPassword1234"));
 
@@ -393,8 +379,8 @@ public class TaskItemIntegrationTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new TaskItemStatusDTO(true))))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-Action verification
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
@@ -423,7 +409,7 @@ public class TaskItemIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
-                .andExpect(jsonPath("$.message").value("List not found!"));
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-Action verification
         Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
@@ -562,7 +548,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void getTaskItemById_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void getTaskItemById_asUnauthorisedUser_shouldReturn404NotFound() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", encoder.encode("VeryStrongPassword1234"));
 
@@ -579,8 +565,8 @@ public class TaskItemIntegrationTest {
         String url = "/list/" + taskListId + "/task/" + taskItemId;
         mockMvc.perform(MockMvcRequestBuilders.get(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
     }
 
     @Test
@@ -620,7 +606,7 @@ public class TaskItemIntegrationTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message.length()").value(1))
-                .andExpect(jsonPath("$.message").value("List not found!"));
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
     }
 
     @Test
@@ -742,7 +728,7 @@ public class TaskItemIntegrationTest {
     }
 
     @Test
-    void updateTaskItemDescription_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void updateTaskItemDescription_asUnauthorisedUser_shouldReturn404NotFound() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", encoder.encode("VeryStrongPassword1234"));
 
@@ -763,8 +749,8 @@ public class TaskItemIntegrationTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(updatedDesc))))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-Action verification
         long countAfter = taskItemRepository.count();
@@ -840,28 +826,40 @@ public class TaskItemIntegrationTest {
         TaskList savedTaskList = assertValidTaskListCreation(
                 createTaskListAndSave(null),
                 ownerUser, null);
-        TaskItem savedTaskItem = assertValidTaskItemCreation(
+        TaskItem taskItemToUpdate = assertValidTaskItemCreation(
                 createTaskItemAndSave(savedTaskList), savedTaskList);
+
+        // Create a DIFFERENT task item with the description we will use for the duplicate
+        TaskItem existingTaskItemWithDuplicateDescription = new TaskItem();
+        existingTaskItemWithDuplicateDescription.setTaskList(savedTaskList);
+        existingTaskItemWithDuplicateDescription.setDescription("Nike shoes");
+        existingTaskItemWithDuplicateDescription.setCompleted(false);
+        TaskItem savedExistingItem = taskItemRepository.save(existingTaskItemWithDuplicateDescription);
+
+        assertThat(savedExistingItem).isNotNull();
+        assertThat(savedExistingItem.getDescription()).isEqualTo("Nike shoes");
+        assertThat(savedExistingItem.getCompleted()).isFalse();
+        assertThat(savedExistingItem.getTaskList()).isEqualTo(savedTaskList);
 
         long countBefore = taskItemRepository.count();
         long taskListId = savedTaskList.getId();
-        long taskItemId = savedTaskItem.getId();
-        String duplicateDesc = savedTaskItem.getDescription();
+        long taskItemToUpdateId = taskItemToUpdate.getId();
+        String duplicateDesc = savedExistingItem.getDescription();
 
         // Act & Assert
-        String url = "/list/" + taskListId + "/task/" + taskItemId + "/description";
+        String url = "/list/" + taskListId + "/task/" + taskItemToUpdateId + "/description";
         mockMvc.perform(MockMvcRequestBuilders.patch(url)
                         .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(duplicateDesc))))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Task item description already exists!"));
+                .andExpect(jsonPath("$.message").value("A task with this description already exists in this list!"));
 
         // Post-Action verification
         long countAfter = taskItemRepository.count();
-        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemId);
+        Optional<TaskItem> retrievedTaskItem = taskItemRepository.findById(taskItemToUpdateId);
         assertThat(retrievedTaskItem.isPresent()).isTrue();
-        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(savedTaskItem.getDescription());
+        assertThat(retrievedTaskItem.get().getDescription()).isEqualTo(taskItemToUpdate.getDescription());
         assertThat(countAfter).isEqualTo(countBefore);
     }
 
@@ -887,7 +885,7 @@ public class TaskItemIntegrationTest {
                 .content(objectMapper.writeValueAsString(new TaskItemDescriptionDTO(updatedDesc))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message.length()").value(1))
-                .andExpect(jsonPath("$.message").value("List not found!"));
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-Action verification
         long countAfter = taskItemRepository.count();
