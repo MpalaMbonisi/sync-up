@@ -24,6 +24,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -83,7 +84,7 @@ public class TaskItemServiceTest {
         when(taskItemRepository.findByDescriptionAndTaskList(description.trim(), taskList)).thenReturn(Optional.empty());
         when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> {
             TaskItem task = invocation.getArgument(0);
-            task.setId(1L); // Simulate DB generating ID
+            task.setId(1L);
             return task;
         });
 
@@ -93,12 +94,11 @@ public class TaskItemServiceTest {
         // Assert
         assertThat(savedTaskItem).isNotNull();
         assertThat(savedTaskItem.getId()).isEqualTo(1L);
-        assertThat(savedTaskItem.getDescription()).isEqualTo(description);
-        assertThat(savedTaskItem.getCompleted()).isFalse(); // Default should be false
+        assertThat(savedTaskItem.getDescription()).isEqualTo(description.trim());
+        assertThat(savedTaskItem.getCompleted()).isFalse();
         assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
-        assertThat(savedTaskItem.getTaskList().getTitle()).isEqualTo("Grocery Shopping List");
 
-        // Verify interaction order
+        // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(description.trim(), taskList);
@@ -108,36 +108,31 @@ public class TaskItemServiceTest {
     @Test
     void saveTask_whenUserIsCollaborator_shouldCreateAndReturnTask(){
         // Arrange
-        User collaborator = new User(3L, "nicolencube", "Nicole", "Ncube",
-                "nicolencube@outlook.com", "VeryStrongPassword1234");
-
-
         String description = "1kg Banana";
         TaskItemCreateDTO dto = new TaskItemCreateDTO(description);
         long taskListId = 1L;
-        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", collaborator);
+        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", collaboratorUser);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, collaboratorUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findByDescriptionAndTaskList(description.trim(), taskList)).thenReturn(Optional.empty());
         when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> {
             TaskItem task = invocation.getArgument(0);
-            task.setId(1L); // Simulate DB generating ID
+            task.setId(1L);
             return task;
         });
 
         // Act
-        TaskItem savedTaskItem = taskItemService.saveTask(taskListId, dto, collaborator);
+        TaskItem savedTaskItem = taskItemService.saveTask(taskListId, dto, collaboratorUser);
 
         // Assert
         assertThat(savedTaskItem).isNotNull();
         assertThat(savedTaskItem.getId()).isEqualTo(1L);
-        assertThat(savedTaskItem.getDescription()).isEqualTo(description);
-        assertThat(savedTaskItem.getCompleted()).isFalse(); // Default should be false
+        assertThat(savedTaskItem.getDescription()).isEqualTo(description.trim());
+        assertThat(savedTaskItem.getCompleted()).isFalse();
         assertThat(savedTaskItem.getTaskList()).isEqualTo(taskList);
-        assertThat(savedTaskItem.getTaskList().getTitle()).isEqualTo("Grocery Shopping List");
-        assertThat(savedTaskItem.getTaskList().getCollaborators().contains(collaborator)).isTrue();
+        assertThat(savedTaskItem.getTaskList().getCollaborators().contains(collaboratorUser)).isTrue();
 
-        // Verify interaction order
+        // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, collaboratorUser);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(description.trim(), taskList);
@@ -145,27 +140,23 @@ public class TaskItemServiceTest {
     }
 
     @Test
-    void saveTask_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
+    void saveTask_whenUserIsUnauthorised_shouldThrowListNotFoundException(){
         // Arrange
-        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
-                "karensanders@yahoo.com", "ReallyStrongPassword1234");
-
         String description = "1kg Banana";
         TaskItemCreateDTO dto = new TaskItemCreateDTO(description);
         long taskListId = 1L;
-        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
 
-        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.empty());
 
         // Act & Assert
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskItemService.saveTask(taskListId, dto, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
-        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(description.trim(), taskList);
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(any(), any());
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
@@ -173,56 +164,53 @@ public class TaskItemServiceTest {
     void saveTask_withNonExistentTaskList_shouldThrowListNotFoundException(){
         // Arrange
         long invalidTaskListId = 999L; // non-existent ID
-
         String description = "1kg Banana";
         TaskItemCreateDTO dto = new TaskItemCreateDTO(description);
-        when(taskListRepository.findById(invalidTaskListId)).thenReturn(Optional.empty());
+
+        when(taskListRepository.findByIdAndUserHasAccess(invalidTaskListId, ownerUser)).thenReturn(Optional.empty());
 
         // Act & Assert
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskItemService.saveTask(invalidTaskListId, dto, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("List not found!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
-        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(description.trim(), taskList);
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(any(), any());
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
-    void saveTask_withDuplicateDescription_shouldThrowDescriptionAlreadyExistsException(){
+    void saveTask_withDuplicateDescriptionInSameList_shouldThrowDescriptionAlreadyExistsException(){
         // Arrange
-        TaskList existingTaskList = createTaskList(1L, "Grocery Shopping List", null);
-        TaskItem existingTaskItem = createTaskItem(100L, existingTaskList);
-
-        String duplicateDesc = existingTaskItem.getDescription();
-        TaskItemCreateDTO dto = new TaskItemCreateDTO(duplicateDesc);
-
+        String duplicateDescription = "1kg Banana";
+        TaskItemCreateDTO dto = new TaskItemCreateDTO(duplicateDescription);
         long taskListId = 1L;
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
+        TaskItem existingTaskItem = createTaskItem(100L, duplicateDescription, taskList);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
-        when(taskItemRepository.findByDescriptionAndTaskList(duplicateDesc, taskList)).thenReturn(Optional.of(existingTaskItem));
+        when(taskItemRepository.findByDescriptionAndTaskList(duplicateDescription.trim(), taskList)).thenReturn(Optional.of(existingTaskItem));
 
         // Act & Assert
         DescriptionAlreadyExistsException exception = Assertions.assertThrows(DescriptionAlreadyExistsException.class,
                 () -> taskItemService.saveTask(taskListId, dto, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("Task item description already exists!");
+        assertThat(exception.getMessage()).isEqualTo("A task with this description already exists in this list!");
 
-        // Verify interaction order
+        // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
-        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(duplicateDesc, taskList);
+        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(duplicateDescription.trim(), taskList);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
-    void updateTask_whenUserIsOwner_shouldUpdateAndReturnTask(){
+    void updateTaskItemStatus_whenUserIsOwner_shouldUpdateAndReturnTask(){
         // Arrange
         long taskListId = 1L, taskItemId = 1L;
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
-        TaskItem taskItem = createTaskItem(taskItemId, taskList);
+        TaskItem taskItem = createTaskItem(taskItemId, "Peanut Butter", taskList);
         TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
@@ -246,14 +234,11 @@ public class TaskItemServiceTest {
     }
 
     @Test
-    void updateTask_whenUserIsCollaborator_shouldUpdateAndReturnTask(){
+    void updateTaskItemStatus_whenUserIsCollaborator_shouldUpdateAndReturnTask(){
         // Arrange
-        User collaborator = new User(3L, "nicolencube", "Nicole", "Ncube",
-                "nicolencube@outlook.com", "VeryStrongPassword1234");
-
         long taskListId = 1L, taskItemId = 1L;
-        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", collaborator);
-        TaskItem taskItem = createTaskItem(taskItemId, taskList);
+        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", collaboratorUser);
+        TaskItem taskItem = createTaskItem(taskItemId, "Peanut butter", taskList);
         TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, collaboratorUser)).thenReturn(Optional.of(taskList));
@@ -261,7 +246,7 @@ public class TaskItemServiceTest {
         when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        TaskItem savedTaskItem = taskItemService.updateTaskItemStatus(taskListId, taskItemId, dto, collaborator);
+        TaskItem savedTaskItem = taskItemService.updateTaskItemStatus(taskListId, taskItemId, dto, collaboratorUser);
 
         // Assert
         assertThat(savedTaskItem).isNotNull();
@@ -277,51 +262,47 @@ public class TaskItemServiceTest {
     }
 
     @Test
-    void updateTask_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
+    void updateTaskItemStatus_whenUserIsUnauthorised_shouldThrowListNotFoundException(){
         // Arrange
-        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
-                "karensanders@yahoo.com", "ReallyStrongPassword1234");
-
         long taskListId = 1L, taskItemId = 1L;
-        TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
         TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
 
-        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.empty());
 
         // Act & Assert
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskItemService.updateTaskItemStatus(taskListId, taskItemId, dto, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
-        inOrder.verify(taskItemRepository, never()).findById(taskItemId);
-        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).findById(any());
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any());
     }
 
     @Test
-    void updateTask_withNonExistentTaskListId_shouldThrowListNotFoundException(){
+    void updateTaskItemStatus_withNonExistentTaskListId_shouldThrowListNotFoundException(){
         // Arrange
         long invalidTaskListId = 999L; // non-existent ID
-        long taskItemId = 1L; // assume it exists
+        long taskItemId = 1L;
         TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
         when(taskListRepository.findByIdAndUserHasAccess(invalidTaskListId, ownerUser)).thenReturn(Optional.empty());
 
         // Act & Assert
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskItemService.updateTaskItemStatus(invalidTaskListId, taskItemId, dto, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("List not found!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
-        inOrder.verify(taskItemRepository, never()).findById(taskItemId);
+        inOrder.verify(taskItemRepository, never()).findById(any());
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
-    void updateTask_withNonExistentTaskItemId_shouldThrowTaskNotFoundException(){
+    void updateTaskItemStatus_withNonExistentTaskItemId_shouldThrowTaskNotFoundException(){
         // Arrange
         long taskListId = 1L;
         long invalidTaskItemId = 999L; // non-existent task item ID
@@ -343,11 +324,14 @@ public class TaskItemServiceTest {
     }
 
     @Test
-    void updateTask_whenTaskDoesNotBelongToList_shouldThrowAccessDeniedException(){
+    void updateTaskItemStatus_whenTaskDoesNotBelongToList_shouldThrowAccessDeniedException(){
         // Arrange
         TaskList allowedList = createTaskList(1L, "Allowed List", null);
         TaskList forbiddenList = createTaskList(2L, "Forbidden List", null);
-        TaskItem taskFromForbiddenList = createTaskItem(100L, forbiddenList);
+        TaskItem taskFromForbiddenList = createTaskItem(100L,"Peanut butter", forbiddenList);
+
+        long taskListId = allowedList.getId();
+        long taskItemId = taskFromForbiddenList.getId();
 
         when(taskListRepository.findByIdAndUserHasAccess(1L, ownerUser)).thenReturn(Optional.of(allowedList));
         when(taskItemRepository.findById(100L)).thenReturn(Optional.of(taskFromForbiddenList));
@@ -357,6 +341,11 @@ public class TaskItemServiceTest {
                 () -> taskItemService.updateTaskItemStatus(1L, 100L, new TaskItemStatusDTO(true), ownerUser));
         assertThat(exception.getMessage()).contains("Task does not belong to the specified list");
 
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
+        inOrder.verify(taskItemRepository).findById(taskItemId);
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
@@ -365,7 +354,7 @@ public class TaskItemServiceTest {
         long taskListId = 1L;
         long taskItemId = 100L;
         TaskList taskList = createTaskList(taskListId, "Grocery List", null);
-        TaskItem taskItem = createTaskItem(taskItemId, taskList);
+        TaskItem taskItem = createTaskItem(taskItemId, "Peanut butter", taskList);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
@@ -388,19 +377,16 @@ public class TaskItemServiceTest {
     @Test
     void getTaskItemById_whenUserIsCollaborator_shouldReturnTask(){
         // Arrange
-        User collaborator = new User(3L, "nicolencube", "Nicole", "Ncube",
-                "nicolencube@outlook.com", "VeryStrongPassword1234");
-
         long taskListId = 1L;
         long taskItemId = 100L;
-        TaskList taskList = createTaskList(taskListId, "Grocery List", collaborator);
-        TaskItem taskItem = createTaskItem(taskItemId, taskList);
+        TaskList taskList = createTaskList(taskListId, "Grocery List", collaboratorUser);
+        TaskItem taskItem = createTaskItem(taskItemId, "Peanut butter", taskList);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, collaboratorUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
 
         // Act
-        TaskItem resultTaskItem = taskItemService.getTaskItemById(taskListId, taskItemId, collaborator);
+        TaskItem resultTaskItem = taskItemService.getTaskItemById(taskListId, taskItemId, collaboratorUser);
 
         // Assert
         assertThat(resultTaskItem).isNotNull();
@@ -415,27 +401,24 @@ public class TaskItemServiceTest {
     }
 
     @Test
-    void getTaskItemById_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
+    void getTaskItemById_whenUserIsUnauthorised_shouldThrowListNotFoundException(){
         // Arrange
-        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
-                "karensanders@yahoo.com", "ReallyStrongPassword1234");
-
         long taskListId = 1L;
         long taskItemId = 100L;
         TaskList taskList = createTaskList(taskListId, "Grocery List", null);
-        createTaskItem(taskItemId, taskList);
+        createTaskItem(taskItemId, "Peanut butter", taskList);
 
-        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.empty());
 
         // Act & Assert
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskItemService.getTaskItemById(taskListId, taskItemId, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
-        inOrder.verify(taskItemRepository, never()).findById(taskItemId);
+        inOrder.verify(taskItemRepository, never()).findById(any());
     }
 
     @Test
@@ -448,12 +431,12 @@ public class TaskItemServiceTest {
         // Act & Assert
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskItemService.getTaskItemById(invalidTaskListId, taskItemId, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("List not found!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
-        inOrder.verify(taskItemRepository, never()).findById(taskItemId);
+        inOrder.verify(taskItemRepository, never()).findById(any());
     }
 
     @Test
@@ -485,7 +468,7 @@ public class TaskItemServiceTest {
 
         TaskList allowedList = createTaskList(taskListId, "Allowed List", null);
         TaskList forbiddenList = createTaskList(2L, "Forbidden List", null);
-        TaskItem taskFromForbiddenList = createTaskItem(taskItemId, forbiddenList);
+        TaskItem taskFromForbiddenList = createTaskItem(taskItemId, "Peanut butter", forbiddenList);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(allowedList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskFromForbiddenList));
@@ -508,9 +491,9 @@ public class TaskItemServiceTest {
         long taskItemId = 100L;
 
         TaskList taskList = createTaskList(taskListId, "Shopping wishlist", null);
-        TaskItem taskItem = createTaskItem(taskItemId, taskList);
+        TaskItem taskItem = createTaskItem(taskItemId, "Peanut butter", taskList);
 
-        String updatedDesc = "Gucci Bag";
+        String updatedDesc = "Jam";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
@@ -538,15 +521,12 @@ public class TaskItemServiceTest {
     @Test
     void updateTaskItemDescription_whenUserIsCollaborator_shouldUpdateAndReturnTask(){
         // Arrange
-        User collaborator = new User(3L, "nicolencube", "Nicole", "Ncube",
-                "nicolencube@outlook.com", "VeryStrongPassword1234");
-
         long taskListId = 1L;
         long taskItemId = 100L;
 
-        TaskList taskList = createTaskList(taskListId, "Shopping wishlist", collaborator);
-        TaskItem taskItem = createTaskItem(taskItemId, taskList);
-        String updatedDesc = "Gucci Bag";
+        TaskList taskList = createTaskList(taskListId, "Shopping wishlist", collaboratorUser);
+        TaskItem taskItem = createTaskItem(taskItemId, "Peanut butter", taskList);
+        String updatedDesc = "Jam";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, collaboratorUser)).thenReturn(Optional.of(taskList));
@@ -555,7 +535,7 @@ public class TaskItemServiceTest {
         when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        TaskItem resultTaskItem = taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto,collaborator);
+        TaskItem resultTaskItem = taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto,collaboratorUser);
 
         // Assert
         assertThat(resultTaskItem).isNotNull();
@@ -572,60 +552,57 @@ public class TaskItemServiceTest {
     }
 
     @Test
-    void updateTaskItemDescription_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
+    void updateTaskItemDescription_whenUserIsUnauthorised_shouldThrowListNotFoundException(){
         // Arrange
-        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
-                "karensanders@yahoo.com", "ReallyStrongPassword1234");
-
         long taskListId = 1L;
         long taskItemId = 100L;
 
-        TaskList taskList = createTaskList(taskListId, "Shopping wishlist", null);
-        createTaskItem(taskItemId, taskList);
-        String updatedDesc = "Gucci Bag";
+        String updatedDesc = "Jam";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
 
-        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.empty());
 
         // Act & Assert
-        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto, unauthorisedUser));
-        assertThat(exception.getMessage()).isEqualTo("User is not authorised to access this list!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
-        inOrder.verify(taskItemRepository, never()).findById(taskItemId);
-        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, taskList);
+        inOrder.verify(taskItemRepository, never()).findById(any());
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(any(), any());
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
 
     @Test
-    void updateTaskItemDescription_withDuplicateDescription_shouldThrowDescriptionAlreadyExistsException(){
+    void updateTaskItemDescription_whenUpdatingToExistingDescriptionInSameList_shouldThrowDescriptionAlreadyExistsException(){
         long taskListId = 1L;
         long taskItemId = 100L;
 
         TaskList taskList = createTaskList(taskListId, "Shopping wishlist", null);
-        TaskItem taskItem = createTaskItem(taskItemId, taskList);
+        TaskItem taskItemToUpdate = createTaskItem(taskItemId, "Current Description", taskList);
+        TaskItem existingTaskWithTargetDescription = createTaskItem(101L, "Target Description", taskList);
 
-        String duplicateDesc = taskItem.getDescription();
+        String duplicateDesc = "Target Description";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(duplicateDesc);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
-        when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
-        when(taskItemRepository.findByDescriptionAndTaskList(duplicateDesc, taskList)).thenReturn(Optional.of(taskItem));
+        when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItemToUpdate));
+        when(taskItemRepository.findByDescriptionAndTaskList(duplicateDesc.trim(), taskList))
+                .thenReturn(Optional.of(existingTaskWithTargetDescription));
 
         // Act & Assert
         DescriptionAlreadyExistsException exception = Assertions.assertThrows(DescriptionAlreadyExistsException.class,
                 () -> taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("Task item description already exists!");
+        assertThat(exception.getMessage()).isEqualTo("A task with this description already exists in this list!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
-        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(duplicateDesc, taskList);
-        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
+        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(duplicateDesc.trim(), taskList);
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -634,21 +611,21 @@ public class TaskItemServiceTest {
         long invalidTaskListId = 999L; // non-existent task list ID
         long taskItemId = 100L;
 
-        String updatedDesc = "Gucci Bag";
+        String updatedDesc = "Jam";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
         when(taskListRepository.findByIdAndUserHasAccess(invalidTaskListId, ownerUser)).thenReturn(Optional.empty());
 
         // Act & Assert
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
                 () -> taskItemService.updateTaskItemDescription(invalidTaskListId, taskItemId, dto, ownerUser));
-        assertThat(exception.getMessage()).isEqualTo("List not found!");
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
-        inOrder.verify(taskItemRepository, never()).findById(taskItemId);
-        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, any(TaskList.class));
-        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).findById(any());
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(any(), any());
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -658,7 +635,7 @@ public class TaskItemServiceTest {
         long invalidTaskItemId = 999L; // non-existent task item id
 
         TaskList taskList = createTaskList(taskListId, "Shopping wishlist", null);
-        String updatedDesc = "Gucci Bag";
+        String updatedDesc = "Jam";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
@@ -673,8 +650,8 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
-        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, taskList);
-        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(any(), any());
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -684,15 +661,13 @@ public class TaskItemServiceTest {
 
         TaskList allowedList = createTaskList(taskListId, "Allowed List", null);
         TaskList forbiddenList = createTaskList(2L, "Forbidden List", null);
-        TaskItem taskFromForbiddenList = createTaskItem(taskItemId, forbiddenList);
+        TaskItem taskFromForbiddenList = createTaskItem(taskItemId, "Peanut butter", forbiddenList);
 
-        String updatedDesc = "Gucci Bag";
+        String updatedDesc = "Jam";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
 
         when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(allowedList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskFromForbiddenList));
-        when(taskItemRepository.findByDescriptionAndTaskList(updatedDesc, allowedList)).thenReturn(Optional.empty());
-
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
                 () -> taskItemService.updateTaskItemDescription(taskListId, taskItemId, dto, ownerUser));
@@ -702,7 +677,7 @@ public class TaskItemServiceTest {
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
         inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
-        inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(updatedDesc, allowedList);
-        inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
+        inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(any(), any());
+        inOrder.verify(taskItemRepository, never()).saveAndFlush(any());
     }
 }

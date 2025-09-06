@@ -46,12 +46,19 @@ public class TaskListServiceTest {
     private TaskListServiceImpl taskListService;
     @Mock
     private PasswordEncoder encoder;
+
     private User ownerUser;
+    private User collaboratorUser;
+    private User unauthorisedUser;
 
     @BeforeEach
     void setUp() {
         ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", "StrongPassword1234");
+        collaboratorUser = new User(2L, "johnsmith", "John", "Smith",
+                "johnsmith@yahoo.com", "ReallyStrongPassword1234");
+        unauthorisedUser = new User(3L, "karensanders", "Karen", "Sanders",
+                "karensanders@outlook.com", "VeryStrongPassword");
     }
 
     @Test
@@ -141,24 +148,21 @@ public class TaskListServiceTest {
     @Test
     void getListById_whenUserIsCollaborator_shouldReturnList(){
         // Arrange
-        User collaborator = new User(2L, "johnsmith", "John", "Smith",
-                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
-
         long id = 1L;
         TaskList tasklist = new TaskList();
         tasklist.setOwner(ownerUser);
         tasklist.setTitle("Grocery Shopping List");
-        tasklist.getCollaborators().add(collaborator);
+        tasklist.getCollaborators().add(collaboratorUser);
         tasklist.setId(id);
 
         when(taskListRepo.findById(id)).thenReturn(Optional.of(tasklist));
 
         // Act
-        TaskList result = taskListService.getListById(id, collaborator);
+        TaskList result = taskListService.getListById(id, collaboratorUser);
 
         // Assert
         assertThat(result).isNotNull();
-        assertThat(result.getCollaborators().contains(collaborator)).isTrue();
+        assertThat(result.getCollaborators().contains(collaboratorUser)).isTrue();
         assertThat(result.getTitle()).isEqualTo(tasklist.getTitle());
         assertThat(result.getOwner().getUsername()).isEqualTo(ownerUser.getUsername());
 
@@ -169,9 +173,6 @@ public class TaskListServiceTest {
     @Test
     void getListById_whenUserIsNotAuthorised_shouldThrowAccessDeniedException(){
         // Arrange
-        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
-                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
-
         long id = 1L;
         TaskList taskList = new TaskList();
         taskList.setOwner(ownerUser);
@@ -229,9 +230,6 @@ public class TaskListServiceTest {
     @Test
     void removeListById_UserIsNotOwner_shouldThrowAccessDeniedException(){
         // Arrange
-        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
-                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
-
         long id = 1L;
         TaskList taskList = new TaskList();
         taskList.setId(id);
@@ -253,21 +251,18 @@ public class TaskListServiceTest {
     @Test
     void removeListById_whenUserIsCollaborator_shouldThrowAccessDeniedException(){
         // Arrange
-        User collaborator = new User(2L, "johnsmith", "John", "Smith",
-                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
-
         long id = 1L;
         TaskList taskList = new TaskList();
         taskList.setId(id);
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
-        taskList.getCollaborators().add(collaborator);
+        taskList.getCollaborators().add(collaboratorUser);
 
         when(taskListRepo.findById(id)).thenReturn(Optional.of(taskList));
 
         // Act
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
-                () -> taskListService.removeListById(id, collaborator));
+                () -> taskListService.removeListById(id, collaboratorUser));
         assertThat(exception.getMessage()).isEqualTo("User is not authorised to access to delete this list!");
 
         // Verify
@@ -335,9 +330,6 @@ public class TaskListServiceTest {
     @Test
     void addCollaboratorsByUsername_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
         // Arrange
-        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
-                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
-
         Set<String> usernames = new HashSet<>();
         usernames.add("johnsmith");
         usernames.add("nicolencube");
@@ -415,9 +407,6 @@ public class TaskListServiceTest {
     void removeCollaboratorByUsername_whenUserIsOwner_shouldRemoveCollaborator() {
         // Arrange
         String collaboratorUsername = "johnsmith";
-        User collaborator = new User(2L, "johnsmith", "John", "Smith",
-                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
-
         RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO(collaboratorUsername);
 
         long taskListId = 1L;
@@ -425,10 +414,10 @@ public class TaskListServiceTest {
         taskList.setId(taskListId);
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
-        taskList.getCollaborators().add(collaborator);
+        taskList.getCollaborators().add(collaboratorUser);
 
         when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
-        when(userRepository.findByUsername(collaboratorUsername)).thenReturn(Optional.of(collaborator));
+        when(userRepository.findByUsername(collaboratorUsername)).thenReturn(Optional.of(collaboratorUser));
 
         // Act
         taskListService.removeCollaboratorByUsername(taskListId, dto, ownerUser);
@@ -445,10 +434,6 @@ public class TaskListServiceTest {
     @Test
     void removeCollaboratorByUsername_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
         // Arrange
-        User collaborator = new User(2L, "johnsmith", "John", "Smith",
-                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
-        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
-                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
         RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO("johnsmith");
 
         long taskListId = 1L;
@@ -456,7 +441,7 @@ public class TaskListServiceTest {
         taskList.setId(taskListId);
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
-        taskList.getCollaborators().add(collaborator);
+        taskList.getCollaborators().add(collaboratorUser);
 
         when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
 
@@ -474,7 +459,7 @@ public class TaskListServiceTest {
     @Test
     void removeCollaboratorByUsername_whenCollaboratorIsNonExistent_shouldThrowUsernameNotFoundException(){
         // Arrange
-        String collaboratorUsername = "johnsmith"; // non-existent username for collaborator
+        String collaboratorUsername = "nicolencube"; // non-existent username for collaborator
 
         RemoveCollaboratorRequestDTO dto = new RemoveCollaboratorRequestDTO(collaboratorUsername);
 
@@ -550,9 +535,6 @@ public class TaskListServiceTest {
     @Test
     void getAllCollaborators_whenUserIsUnauthorised_shouldThrowAccessDeniedException(){
         // Arrange
-        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
-                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
-
         List<User> collaborators = List.of(new User(2L, "johnsmith", "John", "Smith",
                         "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234")),
                 new User(3L, "nicolencube", "Nicole", "Ncube",
@@ -650,14 +632,11 @@ public class TaskListServiceTest {
     @Test
     void updateTaskListTitle_whenUserIsCollaborator_shouldThrowAccessDeniedException(){
         // Arrange
-        User collaborator = new User(2L, "johnsmith", "John", "Smith",
-                "johnsmith@yahoo.com", encoder.encode("ReallyStrongPassword1234"));
-
         long id = 1L;
         TaskList taskList = new TaskList();
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
-        taskList.getCollaborators().add(collaborator);
+        taskList.getCollaborators().add(collaboratorUser);
         taskList.setId(id);
 
         String updatedTitle = "Shoe wishlist";
@@ -667,7 +646,7 @@ public class TaskListServiceTest {
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
-                () -> taskListService.updateTaskListTitle(id, dto, collaborator));
+                () -> taskListService.updateTaskListTitle(id, dto, collaboratorUser));
         assertThat(exception.getMessage()).isEqualTo("User not authorised to update this task list title!");
 
         // Verify
@@ -680,9 +659,6 @@ public class TaskListServiceTest {
     @Test
     void updateTaskListTitle_UserIsUnauthorised_shouldThrowAccessDeniedException(){
         // Arrange
-        User unauthorisedUser = new User(2L, "karensanders", "Karen", "Sanders",
-                "karensanders@outlook.com", encoder.encode("VeryStrongPassword"));
-
         long id = 1L;
         TaskList taskList = new TaskList();
         taskList.setTitle("Grocery Shopping List");
