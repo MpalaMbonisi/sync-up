@@ -13,7 +13,6 @@ import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskItemRepository;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
-import com.github.mpalambonisi.syncup.repository.UserRepository;
 import com.github.mpalambonisi.syncup.service.impl.TaskItemServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +23,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
