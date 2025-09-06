@@ -37,16 +37,21 @@ public class TaskItemServiceTest {
     private TaskItemRepository taskItemRepository;
     @Mock
     private TaskListRepository taskListRepository;
-    @Mock
-    private UserRepository userRepository;
     @InjectMocks
     private TaskItemServiceImpl taskItemService;
+
     private User ownerUser;
+    private User collaboratorUser;
+    private User unauthorisedUser;
 
     @BeforeEach
     void setUp() {
         ownerUser = new User(1L, "mbonisimpala", "Mbonisi", "Mpala",
                 "mbonisim12@gmail.com", "StrongPassword1234");
+        collaboratorUser = new User(2L, "nicolencube", "Nicole", "Ncube",
+        "nicolencube@outlook.com", "VeryStrongPassword1234");
+        unauthorisedUser = new User(3L, "karensanders", "Karen", "Sanders",
+                "karensanders@yahoo.com", "ReallyStrongPassword1234");
     }
 
     private TaskList createTaskList(long id, String title, User collaborator){
