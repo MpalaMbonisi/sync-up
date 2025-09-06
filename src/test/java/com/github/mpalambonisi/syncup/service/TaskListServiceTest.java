@@ -312,7 +312,7 @@ public class TaskListServiceTest {
         usernames.add(collaborator02.getUsername());
         AddCollaboratorsRequestDTO dto = new AddCollaboratorsRequestDTO(usernames);
 
-        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskListRepo.saveAndFlush(taskList)).thenReturn(taskList);
         when(userRepository.findByUsername(collaborator01.getUsername())).thenReturn(Optional.of(collaborator01));
         when(userRepository.findByUsername(collaborator02.getUsername())).thenReturn(Optional.of(collaborator02));
@@ -327,7 +327,7 @@ public class TaskListServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepo, userRepository);
-        inOrder.verify(taskListRepo).findById(taskListId);
+        inOrder.verify(taskListRepo).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(userRepository).findByUsername("johnsmith");
         inOrder.verify(userRepository).findByUsername("nicolencube");
     }
@@ -349,7 +349,7 @@ public class TaskListServiceTest {
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
 
-        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
@@ -357,7 +357,7 @@ public class TaskListServiceTest {
         assertThat(exception.getMessage()).isEqualTo("User is not authorised to add collaborators!");
 
         // verify
-        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
         verify(userRepository, never()).findByUsername("johnsmith");
         verify(userRepository, never()).findByUsername("nicolencube");
     }
@@ -375,7 +375,7 @@ public class TaskListServiceTest {
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
 
-        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(userRepository.findByUsername("karensanders")).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -385,7 +385,7 @@ public class TaskListServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepo, userRepository);
-        inOrder.verify(taskListRepo).findById(taskListId);
+        inOrder.verify(taskListRepo).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(userRepository).findByUsername("karensanders");
     }
 
@@ -427,7 +427,7 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
         taskList.getCollaborators().add(collaborator);
 
-        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(userRepository.findByUsername(collaboratorUsername)).thenReturn(Optional.of(collaborator));
 
         // Act
@@ -437,7 +437,7 @@ public class TaskListServiceTest {
         assertThat(taskList.getCollaborators()).isEmpty();
 
         // Verify
-        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
         verify(userRepository, times(1)).findByUsername(collaboratorUsername);
         verify(taskListRepo, times(1)).saveAndFlush(taskList);
     }
@@ -458,7 +458,7 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
         taskList.getCollaborators().add(collaborator);
 
-        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
@@ -466,7 +466,7 @@ public class TaskListServiceTest {
         assertThat(exception.getMessage()).isEqualTo("User is not authorised to remove collaborators!");
 
         // verify
-        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
         verify(userRepository, never()).findByUsername("johnsmith");
         verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
@@ -484,7 +484,7 @@ public class TaskListServiceTest {
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
 
-        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(userRepository.findByUsername(collaboratorUsername)).thenReturn(Optional.empty());
 
         // Act
@@ -493,7 +493,7 @@ public class TaskListServiceTest {
         assertThat(exception.getMessage()).isEqualTo("Collaborator username not found!");
 
         // Verify
-        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
         verify(userRepository, times(1)).findByUsername(collaboratorUsername);
         verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
@@ -532,7 +532,7 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
         taskList.getCollaborators().addAll(collaborators);
 
-        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
 
         // Act
         Set<User> retrievedList = taskListService.getAllCollaborators(taskListId, ownerUser);
@@ -543,7 +543,7 @@ public class TaskListServiceTest {
                 .containsExactlyInAnyOrder(collaborators.get(0), collaborators.get(1));
 
         // Verify
-        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
         verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
@@ -565,7 +565,7 @@ public class TaskListServiceTest {
         taskList.setOwner(ownerUser);
         taskList.getCollaborators().addAll(collaborators);
 
-        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
@@ -573,7 +573,7 @@ public class TaskListServiceTest {
         assertThat(exception.getMessage()).isEqualTo("User is not authorised to retrieve all collaborators!");
 
         // Verify
-        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
         verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 
@@ -602,7 +602,7 @@ public class TaskListServiceTest {
         taskList.setTitle("Grocery Shopping List");
         taskList.setOwner(ownerUser);
 
-        when(taskListRepo.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepo.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
 
         // Act
         Set<User> retrievedList = taskListService.getAllCollaborators(taskListId, ownerUser);
@@ -611,7 +611,7 @@ public class TaskListServiceTest {
         assertThat(retrievedList).isEmpty();
 
         // Verify
-        verify(taskListRepo, times(1)).findById(taskListId);
+        verify(taskListRepo, times(1)).findByIdAndUserHasAccess(taskListId, ownerUser);
         verify(taskListRepo, never()).saveAndFlush(any(TaskList.class));
     }
 

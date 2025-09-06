@@ -26,8 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.in;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -80,7 +79,7 @@ public class TaskItemServiceTest {
         long taskListId = 1L;
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findByDescriptionAndTaskList(description.trim(), taskList)).thenReturn(Optional.empty());
         when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> {
             TaskItem task = invocation.getArgument(0);
@@ -101,7 +100,7 @@ public class TaskItemServiceTest {
 
         // Verify interaction order
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(description.trim(), taskList);
         inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
     }
@@ -118,7 +117,7 @@ public class TaskItemServiceTest {
         long taskListId = 1L;
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", collaborator);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, collaboratorUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findByDescriptionAndTaskList(description.trim(), taskList)).thenReturn(Optional.empty());
         when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> {
             TaskItem task = invocation.getArgument(0);
@@ -140,7 +139,7 @@ public class TaskItemServiceTest {
 
         // Verify interaction order
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, collaboratorUser);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(description.trim(), taskList);
         inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
     }
@@ -156,7 +155,7 @@ public class TaskItemServiceTest {
         long taskListId = 1L;
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
@@ -165,7 +164,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(description.trim(), taskList);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
@@ -186,7 +185,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(invalidTaskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(description.trim(), taskList);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
@@ -203,7 +202,7 @@ public class TaskItemServiceTest {
         long taskListId = 1L;
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findByDescriptionAndTaskList(duplicateDesc, taskList)).thenReturn(Optional.of(existingTaskItem));
 
         // Act & Assert
@@ -213,7 +212,7 @@ public class TaskItemServiceTest {
 
         // Verify interaction order
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(duplicateDesc, taskList);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
@@ -226,7 +225,7 @@ public class TaskItemServiceTest {
         TaskItem taskItem = createTaskItem(taskItemId, taskList);
         TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
         when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -241,7 +240,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
     }
@@ -257,7 +256,7 @@ public class TaskItemServiceTest {
         TaskItem taskItem = createTaskItem(taskItemId, taskList);
         TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, collaboratorUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
         when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -272,7 +271,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, collaboratorUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
     }
@@ -287,7 +286,7 @@ public class TaskItemServiceTest {
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
         TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
@@ -296,7 +295,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
@@ -307,7 +306,7 @@ public class TaskItemServiceTest {
         long invalidTaskListId = 999L; // non-existent ID
         long taskItemId = 1L; // assume it exists
         TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
-        when(taskListRepository.findById(invalidTaskListId)).thenReturn(Optional.empty());
+        when(taskListRepository.findByIdAndUserHasAccess(invalidTaskListId, ownerUser)).thenReturn(Optional.empty());
 
         // Act & Assert
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
@@ -316,7 +315,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(invalidTaskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
@@ -328,7 +327,7 @@ public class TaskItemServiceTest {
         long invalidTaskItemId = 999L; // non-existent task item ID
         TaskList taskList = createTaskList(taskListId, "Grocery Shopping List", null);
         TaskItemStatusDTO dto = new TaskItemStatusDTO(true);
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(invalidTaskItemId)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -338,7 +337,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
     }
@@ -350,7 +349,7 @@ public class TaskItemServiceTest {
         TaskList forbiddenList = createTaskList(2L, "Forbidden List", null);
         TaskItem taskFromForbiddenList = createTaskItem(100L, forbiddenList);
 
-        when(taskListRepository.findById(1L)).thenReturn(Optional.of(allowedList));
+        when(taskListRepository.findByIdAndUserHasAccess(1L, ownerUser)).thenReturn(Optional.of(allowedList));
         when(taskItemRepository.findById(100L)).thenReturn(Optional.of(taskFromForbiddenList));
 
         // Act & Assert
@@ -368,7 +367,7 @@ public class TaskItemServiceTest {
         TaskList taskList = createTaskList(taskListId, "Grocery List", null);
         TaskItem taskItem = createTaskItem(taskItemId, taskList);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
 
         // Act
@@ -382,7 +381,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
     }
 
@@ -397,7 +396,7 @@ public class TaskItemServiceTest {
         TaskList taskList = createTaskList(taskListId, "Grocery List", collaborator);
         TaskItem taskItem = createTaskItem(taskItemId, taskList);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, collaboratorUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
 
         // Act
@@ -411,7 +410,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, collaboratorUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
     }
 
@@ -426,7 +425,7 @@ public class TaskItemServiceTest {
         TaskList taskList = createTaskList(taskListId, "Grocery List", null);
         createTaskItem(taskItemId, taskList);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
@@ -435,7 +434,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
     }
 
@@ -444,7 +443,7 @@ public class TaskItemServiceTest {
         // Arrange
         long invalidTaskListId = 999L; // non-existent
         long taskItemId = 1L;
-        when(taskListRepository.findById(invalidTaskListId)).thenReturn(Optional.empty());
+        when(taskListRepository.findByIdAndUserHasAccess(invalidTaskListId, ownerUser)).thenReturn(Optional.empty());
 
         // Act & Assert
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
@@ -453,7 +452,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(invalidTaskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
     }
 
@@ -464,7 +463,7 @@ public class TaskItemServiceTest {
         long invalidTaskItemId = 999L; // non-existent
         TaskList taskList = createTaskList(taskListId, "Grocery List", null);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(invalidTaskItemId)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -474,7 +473,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
     }
 
@@ -488,7 +487,7 @@ public class TaskItemServiceTest {
         TaskList forbiddenList = createTaskList(2L, "Forbidden List", null);
         TaskItem taskFromForbiddenList = createTaskItem(taskItemId, forbiddenList);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(allowedList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(allowedList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskFromForbiddenList));
 
         // Act & Assert
@@ -498,7 +497,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
     }
 
@@ -514,7 +513,7 @@ public class TaskItemServiceTest {
         String updatedDesc = "Gucci Bag";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
         when(taskItemRepository.findByDescriptionAndTaskList(updatedDesc, taskList)).thenReturn(Optional.empty());
         when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -530,7 +529,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(updatedDesc, taskList);
         inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
@@ -550,7 +549,7 @@ public class TaskItemServiceTest {
         String updatedDesc = "Gucci Bag";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, collaboratorUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
         when(taskItemRepository.findByDescriptionAndTaskList(updatedDesc, taskList)).thenReturn(Optional.empty());
         when(taskItemRepository.saveAndFlush(any(TaskItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -566,7 +565,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, collaboratorUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(updatedDesc, taskList);
         inOrder.verify(taskItemRepository).saveAndFlush(any(TaskItem.class));
@@ -586,7 +585,7 @@ public class TaskItemServiceTest {
         String updatedDesc = "Gucci Bag";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.of(taskList));
 
         // Act & Assert
         AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
@@ -595,7 +594,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, taskList);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
@@ -612,7 +611,7 @@ public class TaskItemServiceTest {
         String duplicateDesc = taskItem.getDescription();
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(duplicateDesc);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
         when(taskItemRepository.findByDescriptionAndTaskList(duplicateDesc, taskList)).thenReturn(Optional.of(taskItem));
 
@@ -623,7 +622,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(duplicateDesc, taskList);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
@@ -637,7 +636,7 @@ public class TaskItemServiceTest {
 
         String updatedDesc = "Gucci Bag";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
-        when(taskListRepository.findById(invalidTaskListId)).thenReturn(Optional.empty());
+        when(taskListRepository.findByIdAndUserHasAccess(invalidTaskListId, ownerUser)).thenReturn(Optional.empty());
 
         // Act & Assert
         ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
@@ -646,7 +645,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(invalidTaskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
         inOrder.verify(taskItemRepository, never()).findById(taskItemId);
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, any(TaskList.class));
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
@@ -662,7 +661,7 @@ public class TaskItemServiceTest {
         String updatedDesc = "Gucci Bag";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(taskList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
         when(taskItemRepository.findById(invalidTaskItemId)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -672,7 +671,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(updatedDesc, taskList);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
@@ -690,7 +689,7 @@ public class TaskItemServiceTest {
         String updatedDesc = "Gucci Bag";
         TaskItemDescriptionDTO dto = new TaskItemDescriptionDTO(updatedDesc);
 
-        when(taskListRepository.findById(taskListId)).thenReturn(Optional.of(allowedList));
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(allowedList));
         when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskFromForbiddenList));
         when(taskItemRepository.findByDescriptionAndTaskList(updatedDesc, allowedList)).thenReturn(Optional.empty());
 
@@ -701,7 +700,7 @@ public class TaskItemServiceTest {
 
         // Verify
         InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
-        inOrder.verify(taskListRepository).findById(taskListId);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
         inOrder.verify(taskItemRepository).findById(taskItemId);
         inOrder.verify(taskItemRepository).findByDescriptionAndTaskList(updatedDesc, allowedList);
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any(TaskItem.class));
