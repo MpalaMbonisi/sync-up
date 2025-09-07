@@ -19,7 +19,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -126,7 +125,7 @@ public class TaskListIntegrationTest {
                         .andExpect(jsonPath("$.owner").value("mbonisimpala"));
 
         // Post-Action Verification
-        Optional<TaskList> savedList = taskListRepository.findByTitle(dto.getTitle());
+        Optional<TaskList> savedList = taskListRepository.findByTitleAndOwner(dto.getTitle(), ownerUser);
         assertThat(savedList).isPresent();
         assertThat(savedList.get().getOwner().getUsername()).isEqualTo("mbonisimpala");
     }
@@ -146,7 +145,7 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
 
         // Post-Action Verification
-        Optional<TaskList> savedList = taskListRepository.findByTitle(dto.getTitle());
+        Optional<TaskList> savedList = taskListRepository.findByTitleAndOwner(dto.getTitle(), ownerUser);
         assertThat(savedList).isEmpty();
     }
 
@@ -166,7 +165,7 @@ public class TaskListIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Title is already being used!"));
+                .andExpect(jsonPath("$.message").value("You already have a list with this title!"));
 
         // Post-Action Verification
         assertThat(taskListRepository.count()).isEqualTo(1);
@@ -174,7 +173,6 @@ public class TaskListIntegrationTest {
     }
 
     @ParameterizedTest
-    @WithMockUser(username = "mbonisimpala")
     @CsvSource({"'', 'Title cannot be empty.'", "'   ', 'Title cannot be blank.'"})
     void createList_withBlankTitle_shouldReturn400BadRequest(String invalidTitle, String expectedErrorMessage) throws Exception{
         // Arrange
@@ -182,6 +180,7 @@ public class TaskListIntegrationTest {
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.post("/list/create")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
@@ -189,7 +188,7 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.message", hasItems(expectedErrorMessage)));
 
         // Post-Action Verification
-        Optional<TaskList> savedList = taskListRepository.findByTitle(dto.getTitle());
+        Optional<TaskList> savedList = taskListRepository.findByTitleAndOwner(dto.getTitle(), ownerUser);
         assertThat(savedList).isEmpty();
     }
 
@@ -214,10 +213,10 @@ public class TaskListIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[1].title").value("Shopping List"))
-                .andExpect(jsonPath("$[1].owner").value(ownerUser.getUsername()))
-                .andExpect(jsonPath("$[0].title").value("Clothing Wishlist"))
-                .andExpect(jsonPath("$[0].owner").value(ownerUser.getUsername()));
+                .andExpect(jsonPath("$[0].title").value("Shopping List"))
+                .andExpect(jsonPath("$[0].owner").value(ownerUser.getUsername()))
+                .andExpect(jsonPath("$[1].title").value("Clothing Wishlist"))
+                .andExpect(jsonPath("$[1].owner").value(ownerUser.getUsername()));
     }
 
     @Test
@@ -247,7 +246,7 @@ public class TaskListIntegrationTest {
     }
 
     @Test
-    void getListById_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void getListById_asUnauthorisedUser_shouldReturn404NotFound() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "ReallyStrongPassword1234");
         TaskList savedTaskList = assertValidTaskListCreation(
@@ -258,8 +257,8 @@ public class TaskListIntegrationTest {
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/" + savedTaskList.getId())
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User is not authorised to access this list!"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
     }
 
     @Test
@@ -294,7 +293,7 @@ public class TaskListIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
-                .andExpect(jsonPath("$.message").value("List not found!"));
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
     }
 
@@ -334,7 +333,7 @@ public class TaskListIntegrationTest {
     }
 
     @Test
-    void deleteListById_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void deleteListById_asUnauthorisedUser_shouldReturn404NotFound() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "ReallyStrongPassword1234");
 
@@ -347,8 +346,8 @@ public class TaskListIntegrationTest {
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId)
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User is not authorised to access to delete this list!"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-Action Verification
         Optional<TaskList> savedList = taskListRepository.findById(taskListId);
@@ -366,7 +365,7 @@ public class TaskListIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
-                .andExpect(jsonPath("$.message").value("List not found!"));
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
     }
 
     @Test
@@ -384,7 +383,7 @@ public class TaskListIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId)
                         .with(SecurityMockMvcRequestPostProcessors.user(collaborator)))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User is not authorised to access to delete this list!"));
+                .andExpect(jsonPath("$.message").value("Only the list owner can delete this list!"));
 
         // Post-Action Verification
         Optional<TaskList> savedList = taskListRepository.findById(taskListId);
@@ -439,7 +438,7 @@ public class TaskListIntegrationTest {
     }
 
     @Test
-    void addCollaboratorsByUsername_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void addCollaboratorsByUsername_asUnauthorisedUser_shouldReturn404NotFound() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "ReallyStrongPassword1234");
 
@@ -458,8 +457,8 @@ public class TaskListIntegrationTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User is not authorised to add collaborators!"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-Action Verification
         Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
@@ -490,7 +489,7 @@ public class TaskListIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
-                .andExpect(jsonPath("$.message").value("Collaborator username not found!"));
+                .andExpect(jsonPath("$.message").value("Collaborator username 'karensanders' not found!"));
 
         // Post-Action Verification
         Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
@@ -515,7 +514,7 @@ public class TaskListIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
-                .andExpect(jsonPath("$.message").value("List not found!"));
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-Action Verification
         Optional<TaskList> retrievedTaskList = taskListRepository.findById(invalidTaskListId);
@@ -601,7 +600,7 @@ public class TaskListIntegrationTest {
     }
 
     @Test
-    void removeCollaboratorByUsername_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void removeCollaboratorByUsername_asUnauthorisedUser_shouldReturn404NotFound() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "ReallyStrongPassword1234");
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
@@ -618,8 +617,8 @@ public class TaskListIntegrationTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User is not authorised to remove collaborators!"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
 
         // Post-Action verification
@@ -669,7 +668,7 @@ public class TaskListIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
-                .andExpect(jsonPath("$.message").value("List not found!"));
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
 
         // Post-Action verification
@@ -678,7 +677,6 @@ public class TaskListIntegrationTest {
     }
 
     @ParameterizedTest
-    @WithMockUser("mbonisimpala")
     @CsvSource({"'', 'Collaborator username cannot be empty.'", "'   ', 'Collaborator username cannot be blank.'"})
     void removeCollaboratorByUsername_withEmptyOrBlankUsername_shouldReturn400BadRequest(String invalidUsername, String expectedMessage) throws Exception{
         // Arrange
@@ -692,6 +690,7 @@ public class TaskListIntegrationTest {
 
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.delete("/list/" + taskListId + "/collaborator/remove")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
@@ -748,7 +747,7 @@ public class TaskListIntegrationTest {
     }
 
     @Test
-    void getAllCollaborators_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void getAllCollaborators_asUnauthorisedUser_shouldReturn40NotFound() throws Exception{
         // Arrange
         User collaborator01 = createUserAndSave("John", "Smith", "StrongPassword1234");
         User collaborator02 = createUserAndSave("Nicole", "Ncube", "ReallyStrongPassword1234");
@@ -763,8 +762,8 @@ public class TaskListIntegrationTest {
         // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/list/" + taskListId + "/collaborator/all")
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User is not authorised to retrieve all collaborators!"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
     }
 
     @Test
@@ -778,7 +777,7 @@ public class TaskListIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").isArray())
                 .andExpect(jsonPath("$.message.length()").value(1))
-                .andExpect(jsonPath("$.message").value("List not found!"));
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
     }
 
     @Test
@@ -848,7 +847,7 @@ public class TaskListIntegrationTest {
     }
 
     @Test
-    void TaskListTitle_asCollaborator_shouldReturn403Forbidden() throws Exception{
+    void updateTaskListTitle_asCollaborator_shouldReturn403Forbidden() throws Exception{
         // Arrange
         User collaborator = createUserAndSave("John", "Smith", "StrongPassword1234");
 
@@ -869,7 +868,7 @@ public class TaskListIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User not authorised to update this task list title!"));
+                .andExpect(jsonPath("$.message").value("Only the list owner can update the list title!"));
 
         // Post-action verification
         long countAfter = taskListRepository.count();
@@ -880,7 +879,7 @@ public class TaskListIntegrationTest {
     }
 
     @Test
-    void updateTaskListTitle_asUnauthorisedUser_shouldReturn403Forbidden() throws Exception{
+    void updateTaskListTitle_asUnauthorisedUser_shouldReturn404NotFound() throws Exception{
         // Arrange
         User unauthorisedUser = createUserAndSave("Karen", "Sanders", "VeryStrongPassword1234");
 
@@ -900,8 +899,8 @@ public class TaskListIntegrationTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(unauthorisedUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("User not authorised to update this task list title!"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-action verification
         long countAfter = taskListRepository.count();
@@ -943,13 +942,22 @@ public class TaskListIntegrationTest {
     @Test
     void updateTaskListTitle_withDuplicateTitle_shouldReturnConflict409() throws Exception{
         // Arrange
-        String originalTitle = "Shopping List";
+        String uniqueTitle = "Shopping List";
+        String duplicateTitle = "Wishlist";
 
-        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(originalTitle);
         TaskList savedTaskList = assertValidTaskListCreation(
-                createTaskListAndSave(originalTitle, List.of()),
-                ownerUser,
-                List.of());
+                createTaskListAndSave(uniqueTitle, List.of()),
+                ownerUser, List.of());
+
+        // Second list that has the title conflict
+        TaskList existingTaskList = createTaskListAndSave(duplicateTitle, List.of());
+        assertThat(existingTaskList).isNotNull();
+        assertThat(existingTaskList.getId()).isNotNull();
+        assertThat(existingTaskList.getOwner()).isEqualTo(ownerUser);
+        assertThat(existingTaskList.getTitle()).isEqualTo(duplicateTitle);
+        assertThat(existingTaskList.getCollaborators()).isEmpty();
+
+        TaskListTitleUpdateDTO dto = new TaskListTitleUpdateDTO(duplicateTitle);
         long taskListId = savedTaskList.getId();
         long countBefore = taskListRepository.count();
 
@@ -960,13 +968,13 @@ public class TaskListIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Task list title already exists!"));
+                .andExpect(jsonPath("$.message").value("You already have a list with this title!"));
 
         // Post-action verification
         long countAfter = taskListRepository.count();
         Optional<TaskList> retrievedTaskList = taskListRepository.findById(taskListId);
         assertThat(retrievedTaskList.isPresent()).isTrue();
-        assertThat(retrievedTaskList.get().getTitle()).isEqualTo(originalTitle);
+        assertThat(retrievedTaskList.get().getTitle()).isEqualTo(uniqueTitle); // verify that the title was NOT updated
         assertThat(countAfter).isEqualTo(countBefore);
     }
 
@@ -1013,7 +1021,7 @@ public class TaskListIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("List not found!"));
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
 
         // Post-action verification
         long countAfter = taskListRepository.count();
