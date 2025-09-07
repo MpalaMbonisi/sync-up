@@ -119,6 +119,38 @@ public class TaskListServiceTest {
     }
 
     @Test
+    void getAllListForOwner_whenUserIsCollaboratorOnly_shouldReturnCollaboratorLists(){
+        // Arrange
+        User anotherOwner = new User(4L, "kamilnowaski", "Kamil", "Nowaski",
+                "kamilnowaski45@yahoo.com", "Password987");
+
+        TaskList collaboratorList01 = new TaskList();
+        collaboratorList01.setOwner(anotherOwner);
+        collaboratorList01.setTitle("Project Alpha");
+        collaboratorList01.getCollaborators().add(ownerUser);
+
+        TaskList collaboratorList02 = new TaskList();
+        collaboratorList02.setOwner(anotherOwner);
+        collaboratorList02.setTitle("Project Beta");
+        collaboratorList02.getCollaborators().add(ownerUser);
+
+        List<TaskList> collaboratorLists = List.of(collaboratorList01, collaboratorList02);
+        when(taskListRepo.findAllByOwnerOrCollaborator(ownerUser)).thenReturn(collaboratorLists);
+
+        // Act
+        List<TaskList> resultTaskList = taskListService.getAllListForOwner(ownerUser);
+
+        // Assert
+        assertThat(resultTaskList).hasSize(2);
+        assertThat(resultTaskList).containsExactlyInAnyOrder(collaboratorList01, collaboratorList02);
+        assertThat(resultTaskList.stream().noneMatch(list -> list.getOwner().equals(ownerUser))).isTrue();
+        assertThat(resultTaskList.stream().allMatch(list -> list.getCollaborators().contains(ownerUser)));
+
+        // Verify
+        verify(taskListRepo).findAllByOwnerOrCollaborator(ownerUser);
+    }
+
+    @Test
     void getListById_whenUserIsOwner_shouldReturnList(){
         // Arrange
         long id = 1L;
