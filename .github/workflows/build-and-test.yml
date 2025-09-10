@@ -56,8 +56,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # Install the required Lightsail plugin
+      - name: Install Lightsail Plugin
+        run: |
+          curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
+          chmod +x "/usr/local/bin/lightsailctl"
+
       # Use aws lightsail push-container-image to push the built image.
-      - name: Build and Push Docker Image to Lightsail
+      - name: Push Docker Image to Lightsail
         run: |
           aws lightsail push-container-image \
             --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
