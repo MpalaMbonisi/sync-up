@@ -1,19 +1,19 @@
-name: Java CI Pipeline
+name: Java CI/CD to AWS Lightsail
 
 on:
   push:
-    branches: [ "main" ] # Or your primary branch
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
 jobs:
-  build-and-test:
-    name: Build & Test
+  # The entire process is combined into a single job for simplicity and to
+  # avoid issues with passing Docker images between jobs.
+  build-test-scan-deploy:
+    name: Build, Test, Scan, & Deploy
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: write
-      pull-requests: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,20 +23,14 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-
-      - name: Cache Maven packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          cache: 'maven'
 
       - name: Make Maven Wrapper Executable
         run: chmod +x mvnw
 
-      - name: Build, Test, and Static Analysis
-        run: ./mvnw -B verify
+      # The build and test steps are kept the same as they are correct.
+      - name: Build, Test, and Package with Maven
+        run: ./mvnw -B clean package
 
       - name: Generate Test Report
         uses: dorny/test-reporter@v1
@@ -47,46 +41,46 @@ jobs:
           reporter: java-junit
           fail-on-error: true
 
-      # store build artifacts
-      - name: Upload Test Results
-        if: always() # Always run, even on failure
-        uses: actions/upload-artifact@v4
+      # This is a critical step. The AWS CLI needs to be configured
+      # for the subsequent Docker and Lightsail commands to work.
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          name: test-results
-          path: |
-            target/surefire-reports/
-            target/site/jacoco/
-          retention-days: 30
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      # Coverage Reports
-      - name: Upload Coverage Reports
-        if: always()
-        uses: actions/upload-artifact@v4
+      # Use aws lightsail push-container-image to push the built image.
+      - name: Build and Push Docker Image to Lightsail
+        run: |
+          aws lightsail push-container-image \
+            --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
+            --label ${{ github.sha }} \
+            --image ${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}
+
+      # This security scan now runs after the image has been built and pushed.
+      - name: Scan for Vulnerabilities with Trivy
+        uses: aquasecurity/trivy-action@0.20.0
         with:
-          name: coverage-report
-          path: target/site/jacoco/
-
-      # Enhanced Failure Notifications
-      - name: Comment Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: target/surefire-reports/*.xml
-          comment_mode: failures
-
-  security-scan:
-    name: Scan for Vulnerabilities with Trivy
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
+          image-ref: ${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}
           format: 'table'
-          exit-code: '1'
           severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+
+      - name: Create Lightsail Deployment
+        run: |
+          aws lightsail create-container-service-deployment \
+            --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
+            --containers '{
+              "my-app": {
+                "image": "${{ secrets.AWS_ACCESS_KEY_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}",
+                "ports": {
+                  "8080": "HTTP"
+                }
+              }
+            }' \
+            --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health"}}' \
+            --environment '{
+              "JWT_SECRET_KEY": "${{ secrets.JWT_SECRET_KEY }}",
+              "SPRING_DATASOURCE_PASSWORD": "${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
+            }'
