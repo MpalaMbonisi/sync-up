@@ -81,18 +81,21 @@ jobs:
 
       - name: Create Lightsail Deployment
         run: |
-          aws lightsail create-container-service-deployment \
-            --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
-            --containers '{
+            CONTAINERS_JSON='{
               "my-app": {
-                "image": "${{ secrets.AWS_ACCESS_KEY_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}",
+                "image": ":${{ secrets.LIGHTSAIL_SERVICE_NAME }}.${{ github.sha }}",
                 "ports": {
                   "8080": "HTTP"
                 }
               }
-            }' \
-            --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health"}}' \
-            --environment '{
+            }'
+            ENVIRONMENT_JSON='{
               "JWT_SECRET_KEY": "${{ secrets.JWT_SECRET_KEY }}",
               "SPRING_DATASOURCE_PASSWORD": "${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
             }'
+
+            aws lightsail create-container-service-deployment \
+              --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
+              --containers "$CONTAINERS_JSON" \
+              --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health"}}' \
+              --environment "$ENVIRONMENT_JSON"
