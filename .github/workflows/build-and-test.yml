@@ -35,8 +35,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-            docker build -t ${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }} .
-
+          docker build -t ${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }} .
 
       - name: Generate Test Report
         uses: dorny/test-reporter@v1
@@ -81,13 +80,24 @@ jobs:
 
       - name: Create Lightsail Deployment
         run: |
-            # Write the JSON payloads to temporary files
-            printf '{"my-app":{"image":"${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}","ports":{"8080":"HTTP"}}}' > containers.json
-            printf '{"JWT_SECRET_KEY":"${{ secrets.JWT_SECRET_KEY }}","SPRING_DATASOURCE_PASSWORD":"${{ secrets.SPRING_DATASOURCE_PASSWORD }}"}' > environment.json
+          # Write the containers JSON with environment variables included
+          cat > containers.json << EOF
+          {
+            "my-app": {
+              "image": "${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}",
+              "environment": {
+                "JWT_SECRET_KEY": "${{ secrets.JWT_SECRET_KEY }}",
+                "SPRING_DATASOURCE_PASSWORD": "${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
+              },
+              "ports": {
+                "8080": "HTTP"
+              }
+            }
+          }
+          EOF
 
-            # Use the 'file://' syntax to pass the JSON content from the files
-            aws lightsail create-container-service-deployment \
-              --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
-              --containers file://containers.json \
-              --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health"}}' \
-              --environment file://environment.json
+          # Create the deployment without the --environment flag
+          aws lightsail create-container-service-deployment \
+            --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
+            --containers file://containers.json \
+            --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health"}}'
