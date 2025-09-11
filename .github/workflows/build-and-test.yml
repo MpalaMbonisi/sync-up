@@ -81,21 +81,9 @@ jobs:
 
       - name: Create Lightsail Deployment
         run: |
-            CONTAINERS_JSON='{
-              "my-app": {
-                "image": "${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}",
-                "ports": {
-                  "8080": "HTTP"
-                }
-              }
-            }'
-            ENVIRONMENT_JSON='{
-              "JWT_SECRET_KEY": "${{ secrets.JWT_SECRET_KEY }}",
-              "SPRING_DATASOURCE_PASSWORD": "${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
-            }'
-
+            # Passing the JSON as a single-line string to avoid multi-line parsing issues
             aws lightsail create-container-service-deployment \
               --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
-              --containers "$CONTAINERS_JSON" \
+              --containers '{"my-app":{"image":"${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}","ports":{"8080":"HTTP"}}}' \
               --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health"}}' \
-              --environment "$ENVIRONMENT_JSON"
+              --environment '{"JWT_SECRET_KEY":"${{ secrets.JWT_SECRET_KEY }}","SPRING_DATASOURCE_PASSWORD":"${{ secrets.SPRING_DATASOURCE_PASSWORD }}"}'
