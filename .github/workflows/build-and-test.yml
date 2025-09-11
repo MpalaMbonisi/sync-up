@@ -82,8 +82,8 @@ jobs:
       - name: Create Lightsail Deployment
         run: |
             # Write the JSON payloads to temporary files
-            echo '{"my-app":{"image":"${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}","ports":{"8080":"HTTP"}}}' > containers.json
-            echo '{"JWT_SECRET_KEY":"${{ secrets.JWT_SECRET_KEY }}","SPRING_DATASOURCE_PASSWORD":"${{ secrets.SPRING_DATASOURCE_PASSWORD }}"}' > environment.json
+            printf '{"my-app":{"image":"${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}","ports":{"8080":"HTTP"}}}' > containers.json
+            printf '{"JWT_SECRET_KEY":"${{ secrets.JWT_SECRET_KEY }}","SPRING_DATASOURCE_PASSWORD":"${{ secrets.SPRING_DATASOURCE_PASSWORD }}"}' > environment.json
 
             # Use the 'file://' syntax to pass the JSON content from the files
             aws lightsail create-container-service-deployment \
