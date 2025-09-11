@@ -83,7 +83,7 @@ jobs:
         run: |
             CONTAINERS_JSON='{
               "my-app": {
-                "image": ":${{ secrets.LIGHTSAIL_SERVICE_NAME }}.${{ github.sha }}",
+                "image": "${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}",
                 "ports": {
                   "8080": "HTTP"
                 }
