@@ -81,9 +81,13 @@ jobs:
 
       - name: Create Lightsail Deployment
         run: |
-            # Passing the JSON as a single-line string to avoid multi-line parsing issues
+            # Write the JSON payloads to temporary files
+            echo '{"my-app":{"image":"${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}","ports":{"8080":"HTTP"}}}' > containers.json
+            echo '{"JWT_SECRET_KEY":"${{ secrets.JWT_SECRET_KEY }}","SPRING_DATASOURCE_PASSWORD":"${{ secrets.SPRING_DATASOURCE_PASSWORD }}"}' > environment.json
+
+            # Use the 'file://' syntax to pass the JSON content from the files
             aws lightsail create-container-service-deployment \
               --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
-              --containers '{"my-app":{"image":"${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}","ports":{"8080":"HTTP"}}}' \
+              --containers file://containers.json \
               --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health"}}' \
-              --environment '{"JWT_SECRET_KEY":"${{ secrets.JWT_SECRET_KEY }}","SPRING_DATASOURCE_PASSWORD":"${{ secrets.SPRING_DATASOURCE_PASSWORD }}"}'
+              --environment file://environment.json
