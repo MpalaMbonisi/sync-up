@@ -76,7 +76,7 @@ jobs:
           cat > containers.json << EOF
           {
             "my-app": {
-              "image": ":${{ secrets.LIGHTSAIL_SERVICE_NAME }}.${{ github.sha }}",
+              "image": "${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}",
               "environment": {
                 "SPRING_PROFILES_ACTIVE": "prod",
                 "SERVER_PORT": "8080",
