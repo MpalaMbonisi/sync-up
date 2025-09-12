@@ -102,4 +102,4 @@ jobs:
           aws lightsail create-container-service-deployment \
             --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
             --containers file://containers.json \
-            --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health","intervalSeconds":30,"timeoutSeconds":10,"healthyThresholdCount":2,"unhealthyThresholdCount":3}}'
+            --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health","intervalSeconds":30,"timeoutSeconds":10,"healthyThreshold":2,"unhealthyThreshold":3}}'
