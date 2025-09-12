@@ -7,5 +7,5 @@ target/
 *.iml
 .idea
 
-
-
+# Application development environment properties
+/src/main/resources/application-dev.properties
