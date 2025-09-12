@@ -7,14 +7,12 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # The entire process is combined into a single job for simplicity and to
-  # avoid issues with passing Docker images between jobs.
   build-test-scan-deploy:
     name: Build, Test, Scan, & Deploy
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: write # This is required for the test reporter
+      checks: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -29,7 +27,6 @@ jobs:
       - name: Make Maven Wrapper Executable
         run: chmod +x mvnw
 
-      # The build and test steps are kept the same as they are correct.
       - name: Build, Test, and Package with Maven
         run: ./mvnw -B clean package
 
@@ -46,8 +43,6 @@ jobs:
           reporter: java-junit
           fail-on-error: true
 
-      # This is a critical step. The AWS CLI needs to be configured
-      # for the subsequent Docker and Lightsail commands to work.
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -55,13 +50,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Install the required Lightsail plugin
       - name: Install Lightsail Plugin
         run: |
           curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
           chmod +x "/usr/local/bin/lightsailctl"
 
-      # Use aws lightsail push-container-image to push the built image.
       - name: Push Docker Image to Lightsail
         run: |
           aws lightsail push-container-image \
@@ -69,7 +62,6 @@ jobs:
             --label ${{ github.sha }} \
             --image ${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}
 
-      # This security scan now runs after the image has been built and pushed.
       - name: Scan for Vulnerabilities with Trivy
         uses: aquasecurity/trivy-action@0.20.0
         with:
@@ -84,10 +76,17 @@ jobs:
           cat > containers.json << EOF
           {
             "my-app": {
-              "image": "${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}",
+              "image": ":${{ secrets.LIGHTSAIL_SERVICE_NAME }}.${{ github.sha }}",
               "environment": {
+                "SPRING_PROFILES_ACTIVE": "prod",
+                "SERVER_PORT": "8080",
                 "JWT_SECRET_KEY": "${{ secrets.JWT_SECRET_KEY }}",
-                "SPRING_DATASOURCE_PASSWORD": "${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
+                "SPRING_DATASOURCE_URL": "${{ secrets.SPRING_DATASOURCE_URL }}",
+                "SPRING_DATASOURCE_USERNAME": "${{ secrets.SPRING_DATASOURCE_USERNAME }}",
+                "SPRING_DATASOURCE_PASSWORD": "${{ secrets.SPRING_DATASOURCE_PASSWORD }}",
+                "SPRING_JPA_HIBERNATE_DDL_AUTO": "update",
+                "SPRING_JPA_SHOW_SQL": "false",
+                "LOGGING_LEVEL_ROOT": "INFO"
               },
               "ports": {
                 "8080": "HTTP"
@@ -96,8 +95,11 @@ jobs:
           }
           EOF
 
-          # Create the deployment without the --environment flag
+          echo "Generated containers.json:"
+          cat containers.json
+
+          # Create the deployment
           aws lightsail create-container-service-deployment \
             --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
             --containers file://containers.json \
-            --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health"}}'
+            --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health","intervalSeconds":30,"timeoutSeconds":10,"healthyThresholdCount":2,"unhealthyThresholdCount":3}}'
