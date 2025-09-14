@@ -1,25 +1,55 @@
 version: '3.8'
 
 services:
-  # This service runs the PostgreSQL database
+  # PostgreSQL database
   db:
     image: postgres:15-alpine
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: postgres
+      POSTGRES_DB: syncup
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - syncup-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # This service runs the Spring Boot application
+  # Spring Boot application
   app:
-    build: .
+    image: syncup:latest
+    restart: unless-stopped
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/postgres
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/syncup
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: false
+      LOGGING_LEVEL_ROOT: INFO
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+    networks:
+      - syncup-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  syncup-network:
+    driver: bridge
