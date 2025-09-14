@@ -103,5 +103,5 @@ jobs:
           scp -i private_key -o StrictHostKeyChecking=no docker-compose.yml $USER_NAME@$HOSTNAME:/opt/syncup/
           scp -i private_key -o StrictHostKeyChecking=no deploy.sh $USER_NAME@$HOSTNAME:/opt/syncup/
 
-          # Execute deployment
-          ssh -i private_key -o StrictHostKeyChecking=no $USER_NAME@$HOSTNAME "chmod +x /opt/syncup/deploy.sh && /opt/syncup/deploy.sh ${{ github.sha }}"
+          # Execute deployment (pass secrets as arguments)
+          ssh -i private_key -o StrictHostKeyChecking=no $USER_NAME@$HOSTNAME "chmod +x /opt/syncup/deploy.sh && /opt/syncup/deploy.sh '${{ secrets.POSTGRES_PASSWORD }}' '${{ secrets.JWT_SECRET_KEY }}' ${{ github.sha }}"
