@@ -73,16 +73,22 @@ jobs:
           # Navigate to app directory
           cd /opt/syncup
 
+          # Create .env file with secrets
+          cat > .env << ENVEOF
+          POSTGRES_PASSWORD=$1
+          JWT_SECRET_KEY=$2
+          ENVEOF
+
           # Stop existing containers
           if [ -f docker-compose.yml ]; then
             docker-compose down || true
           fi
 
           # Load new image
-          docker load < syncup-$1.tar.gz
+          docker load < syncup-$3.tar.gz
 
           # Tag the image
-          docker tag syncup:$1 syncup:latest
+          docker tag syncup:$3 syncup:latest
 
           # Start services
           docker-compose up -d
@@ -92,13 +98,12 @@ jobs:
           docker images | grep syncup | tail -n +4 | awk '{print $3}' | xargs -r docker rmi || true
 
           # Remove uploaded tar file
-          rm -f syncup-$1.tar.gz
+          rm -f syncup-$3.tar.gz
 
           echo "Deployment completed successfully!"
           EOF
 
-          # Copy files to server
-          scp -i private_key -o StrictHostKeyChecking=no .env $USER_NAME@$HOSTNAME:/opt/syncup/
+          # Copy files to server (NO .env file copy!)
           scp -i private_key -o StrictHostKeyChecking=no syncup-${{ github.sha }}.tar.gz $USER_NAME@$HOSTNAME:/opt/syncup/
           scp -i private_key -o StrictHostKeyChecking=no docker-compose.yml $USER_NAME@$HOSTNAME:/opt/syncup/
           scp -i private_key -o StrictHostKeyChecking=no deploy.sh $USER_NAME@$HOSTNAME:/opt/syncup/
