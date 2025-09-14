@@ -26,7 +26,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable) // disable CSRF
-                .authorizeHttpRequests(req -> req.requestMatchers("/auth/**").permitAll()
+                .authorizeHttpRequests(req -> req.requestMatchers("/auth/**", "/actuator/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Exception Handling for unauthorised login
