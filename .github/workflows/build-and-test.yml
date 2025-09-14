@@ -1,4 +1,4 @@
-name: Java CI/CD to AWS Lightsail
+name: Java CI/CD to AWS Lightsail Instance
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }} .
+          docker build -t syncup:${{ github.sha }} .
 
       - name: Generate Test Report
         uses: dorny/test-reporter@v1
@@ -43,63 +43,65 @@ jobs:
           reporter: java-junit
           fail-on-error: true
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Install Lightsail Plugin
-        run: |
-          curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
-          chmod +x "/usr/local/bin/lightsailctl"
-
-      - name: Push Docker Image to Lightsail
-        run: |
-          aws lightsail push-container-image \
-            --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
-            --label ${{ github.sha }} \
-            --image ${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}
-
       - name: Scan for Vulnerabilities with Trivy
         uses: aquasecurity/trivy-action@0.20.0
         with:
-          image-ref: ${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}
+          image-ref: syncup:${{ github.sha }}
           format: 'table'
           severity: 'HIGH,CRITICAL'
           exit-code: '1'
 
-      - name: Create Lightsail Deployment
+      - name: Save Docker Image
         run: |
-          # Write the containers JSON with environment variables included
-          cat > containers.json << EOF
-          {
-            "my-app": {
-              "image": "${{ secrets.LIGHTSAIL_SERVICE_NAME }}:${{ github.sha }}",
-              "environment": {
-                "SPRING_PROFILES_ACTIVE": "prod",
-                "SERVER_PORT": "8080",
-                "JWT_SECRET_KEY": "${{ secrets.JWT_SECRET_KEY }}",
-                "SPRING_DATASOURCE_URL": "${{ secrets.SPRING_DATASOURCE_URL }}",
-                "SPRING_DATASOURCE_USERNAME": "${{ secrets.SPRING_DATASOURCE_USERNAME }}",
-                "SPRING_DATASOURCE_PASSWORD": "${{ secrets.SPRING_DATASOURCE_PASSWORD }}",
-                "SPRING_JPA_HIBERNATE_DDL_AUTO": "update",
-                "SPRING_JPA_SHOW_SQL": "false",
-                "LOGGING_LEVEL_ROOT": "INFO"
-              },
-              "ports": {
-                "8080": "HTTP"
-              }
-            }
-          }
+          docker save syncup:${{ github.sha }} | gzip > syncup-${{ github.sha }}.tar.gz
+
+      - name: Deploy to Lightsail Instance
+        if: github.ref == 'refs/heads/main'
+        env:
+          PRIVATE_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          HOSTNAME: ${{ secrets.LIGHTSAIL_IP }}
+          USER_NAME: ubuntu
+        run: |
+          # Setup SSH
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+
+          # Create deployment script
+          cat > deploy.sh << 'EOF'
+          #!/bin/bash
+          set -e
+
+          # Navigate to app directory
+          cd /opt/syncup
+
+          # Stop existing containers
+          if [ -f docker-compose.yml ]; then
+            docker-compose down || true
+          fi
+
+          # Load new image
+          docker load < syncup-$1.tar.gz
+
+          # Tag the image
+          docker tag syncup:$1 syncup:latest
+
+          # Start services
+          docker-compose up -d
+
+          # Cleanup old images (keep last 3)
+          docker image prune -f
+          docker images | grep syncup | tail -n +4 | awk '{print $3}' | xargs -r docker rmi || true
+
+          # Remove uploaded tar file
+          rm -f syncup-$1.tar.gz
+
+          echo "Deployment completed successfully!"
           EOF
 
-          echo "Generated containers.json:"
-          cat containers.json
+          # Copy files to server
+          scp -i private_key -o StrictHostKeyChecking=no .env $USER_NAME@$HOSTNAME:/opt/syncup/
+          scp -i private_key -o StrictHostKeyChecking=no syncup-${{ github.sha }}.tar.gz $USER_NAME@$HOSTNAME:/opt/syncup/
+          scp -i private_key -o StrictHostKeyChecking=no docker-compose.yml $USER_NAME@$HOSTNAME:/opt/syncup/
+          scp -i private_key -o StrictHostKeyChecking=no deploy.sh $USER_NAME@$HOSTNAME:/opt/syncup/
 
-          # Create the deployment
-          aws lightsail create-container-service-deployment \
-            --service-name ${{ secrets.LIGHTSAIL_SERVICE_NAME }} \
-            --containers file://containers.json \
-            --public-endpoint '{"containerName":"my-app","containerPort":8080,"healthCheck":{"path":"/actuator/health","intervalSeconds":30,"timeoutSeconds":10,"healthyThreshold":2,"unhealthyThreshold":3}}'
+          # Execute deployment
+          ssh -i private_key -o StrictHostKeyChecking=no $USER_NAME@$HOSTNAME "chmod +x /opt/syncup/deploy.sh && /opt/syncup/deploy.sh ${{ github.sha }}"
