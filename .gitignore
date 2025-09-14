@@ -12,3 +12,4 @@ target/
 
 
 /.vscode/
+/connect-to-aws.bat
