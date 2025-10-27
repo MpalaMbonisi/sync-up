@@ -3,6 +3,7 @@ package com.github.mpalambonisi.syncup.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,7 +29,12 @@ public class SecurityConfig {
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource)) // enable CORS
                 .csrf(AbstractHttpConfigurer::disable) // disable CSRF
-                .authorizeHttpRequests(req -> req.requestMatchers("/auth/**", "/actuator/**").permitAll()
+                .authorizeHttpRequests(authorize -> authorize
+                        // Permit both login and register paths
+                        .requestMatchers("/auth/login", "/auth/register").permitAll()
+                        // Also explicitly permit OPTIONS requests (which covers the CORS preflight)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // All other requests require authentication
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Exception Handling for unauthorised login
