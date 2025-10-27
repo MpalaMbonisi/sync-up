@@ -23,20 +23,26 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception{
-        http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // enable CORS
-                .csrf(AbstractHttpConfigurer::disable) // disable CSRF
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
+        http
+                // IMPORTANT: CORS must be configured BEFORE other security settings
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         // Permit both login and register paths
                         .requestMatchers("/auth/login", "/auth/register").permitAll()
-                        // Also explicitly permit OPTIONS requests (which covers the CORS preflight)
+                        // Permit actuator health endpoint
+                        .requestMatchers("/actuator/health").permitAll()
+                        // Explicitly permit OPTIONS requests (CORS preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // All other requests require authentication
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Add JWT filter
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 // Exception Handling for unauthorised login
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint));
@@ -53,5 +59,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
     }
-
 }
