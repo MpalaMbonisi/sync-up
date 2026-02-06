@@ -9,6 +9,7 @@ target/
 
 # Application development environment properties
 /src/main/resources/application-dev.properties
+.env
 
 
 /.vscode/
