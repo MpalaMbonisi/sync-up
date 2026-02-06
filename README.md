@@ -6,7 +6,7 @@ A collaborative task management REST API built with Spring Boot, designed to hel
 
 SyncUp is a robust task collaboration application that allows users to create task lists, manage tasks, and collaborate with team members. The API provides comprehensive functionality for user authentication, task list management, task operations, and collaboration features.
 
-### 🏗️ Architecture & Tech Stack
+### Architecture & Tech Stack
 
 - **Framework**: Spring Boot 3.5.5
 - **Language**: Java 21
@@ -17,7 +17,7 @@ SyncUp is a robust task collaboration application that allows users to create ta
 - **Testing**: JUnit, Spring Boot Test, Testcontainers
 - **Documentation**: Postman Collection included
 
-### 🗄️ Database Schema
+### Database Schema
 
 ```
 ┌─────────────────┐       ┌──────────────────┐       ┌─────────────────┐
@@ -70,7 +70,7 @@ SyncUp is a robust task collaboration application that allows users to create ta
 - View individual tasks
 - Prevent duplicate task descriptions per list
 
-### 🔧 CI/CD Pipeline
+### CI/CD Pipeline
 
 #### Git Hooks (Pre-commit)
 - **Trailing whitespace** - Removes trailing spaces
@@ -92,16 +92,8 @@ The CI/CD pipeline includes the following jobs:
 4. **Docker Image Build** - Creates containerized application
 5. **Test Reporting** - Generates JUnit test reports
 6. **Security Scanning** - Trivy vulnerability scanning (HIGH/CRITICAL)
-7. **Image Packaging** - Compresses Docker image for deployment
-8. **AWS Lightsail Deployment** - Automated deployment to cloud instance
 
-**Deployment Features:**
-- Zero-downtime deployment with health checks
-- Automatic image cleanup (retains last 3 versions)
-- Secure environment variable injection
-- Docker Compose orchestration with PostgreSQL
-
-### 🧪 Testing Strategy
+### Testing Strategy
 
 Built following **Test-Driven Development (TDD)** principles:
 
@@ -110,7 +102,7 @@ Built following **Test-Driven Development (TDD)** principles:
 - **Security Tests** - Authentication and authorization validation
 - **Database Tests** - PostgreSQL integration with test containers
 
-### 📡 API Endpoints
+### API Endpoints
 
 #### Authentication
 - `POST /auth/register` - User registration
@@ -137,9 +129,9 @@ Built following **Test-Driven Development (TDD)** principles:
 #### Health Check
 - `GET /actuator/health` - Application health status
 
-###  Quick Start
+### 🚀 Quick Start
 
-####  Testing with Postman
+#### Testing with Postman
 
 Import the included `SyncUp API.postman_collection.json` file into Postman to test all endpoints. The collection includes:
 
@@ -148,33 +140,83 @@ Import the included `SyncUp API.postman_collection.json` file into Postman to te
 - Example request/response data
 - Environment variables setup
 
-###  Infrastructure
+#### 🐳 Running Locally with Docker Compose
 
-**Current Deployment:**
-- **Instance**: AWS Lightsail
-- **Specifications**: 1GB RAM, 2 vCPUs, 40GB SSD
-- **Services**: Application + PostgreSQL via Docker Compose
 
-### 🔮 Future Roadmap
+### Step 1: Clone the Repository
 
-#### Frontend Development
-- **Framework**: Angular
-- **Architecture**: Polyrepo approach (separate repositories)
-- **Hosting**: AWS S3 for static site hosting
-- **Domain**: Custom domain with AWS Route 53
+```bash
+git clone 
+cd syncup
+```
 
-#### Infrastructure Migration
-- **Backend**: Migrate from Lightsail to EC2 for better scalability
-- **Database**: Consider AWS RDS for managed PostgreSQL
-- **Portfolio Integration**: Personal portfolio site connected via Route 53
+### Step 2: Create Environment File
 
-#### Development Improvements
-- **Commit Standards**: Enhanced conventional commit messages
-- **Code Review**: AI-assisted code reviews and mentor feedback
-- **Documentation**: API documentation with OpenAPI/Swagger
-- **Monitoring**: Application monitoring and logging improvements
+Create a `.env` file in the project root directory:
 
-### Some Technical Highlights I Want to Share
+```bash
+# .env
+POSTGRES_PASSWORD=your_secure_password_here
+JWT_SECRET_KEY=your_jwt_secret_key_at_least_32_characters_long
+```
+
+Example:
+```bash
+POSTGRES_PASSWORD=MySecureP@ssw0rd123
+JWT_SECRET_KEY=myJwtSecretKeyForDevelopment1234567890abcdefghijklmn
+```
+
+### Step 3: Build the Docker Image
+
+First, build the application Docker image:
+
+```bash
+# Using Maven Wrapper (recommended)
+./mvnw clean package -DskipTests
+
+# Build Docker image
+docker build -t syncup:latest .
+```
+
+**Note**: If you're on Windows and the Maven wrapper doesn't work, use:
+```bash
+.\mvnw.cmd clean package -DskipTests
+docker build -t syncup:latest .
+```
+
+### Step 4: Start the Application
+
+```bash
+docker-compose up -d
+```
+
+This will:
+1. Start a PostgreSQL 15 database container
+2. Wait for the database to be healthy
+3. Start the SyncUp API application container
+
+### Step 5: Verify the Application is Running
+
+Check if containers are running:
+```bash
+docker-compose ps
+```
+
+You should see both `db` and `app` containers with status "Up".
+
+Check application health:
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+You should get a response like:
+```json
+{
+  "status": "UP"
+}
+```
+
+### 💡 Some Technical Highlights I Want to Share
 
 **The authentication flow** - I'm particularly proud of how I implemented JWT token management. The tokens are stateless, include proper expiration, and the security configuration handles everything gracefully.
 
@@ -184,7 +226,7 @@ Import the included `SyncUp API.postman_collection.json` file into Postman to te
 
 **Access control** - Every endpoint properly validates that users can only access their own data or data they're allowed to collaborate on.
 
-### Lessons Learned
+### 📚 Lessons Learned
 
 Building this taught me a lot about:
 - **TDD discipline** - Writing tests first really does lead to better design
@@ -193,17 +235,6 @@ Building this taught me a lot about:
 - **JWT security** - Stateless authentication has its own challenges and considerations
 - **Docker deployment** - Containerization makes deployment consistent but adds complexity
 
-### Thanks for Checking It Out!
-
-This project represents my journey into professional backend development. It's not just code - it's a demonstration of modern development practices, from TDD to automated deployment.
-
-If you try out the API or have any feedback, I'd love to hear from you!
-
-### 👨‍💻 Author
+### Author
 
 **Mbonisi Mpala**
-- LinkedIn: [Mbonisi Mpala](https://www.linkedin.com/in/mbonisi-mpala/)
-
----
-
-*Built with ❤️ using Spring Boot and AWS*
