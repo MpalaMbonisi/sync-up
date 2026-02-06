@@ -146,7 +146,7 @@ Import the included `SyncUp API.postman_collection.json` file into Postman to te
 ### Step 1: Clone the Repository
 
 ```bash
-git clone 
+git clone
 cd syncup
 ```
 
