@@ -1,4 +1,4 @@
-name: Java CI/CD to AWS Lightsail Instance
+name: Java CI/CD Pipeline
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-test-scan-deploy:
-    name: Build, Test, Scan, & Deploy
+  build-test-scan:
+    name: Build, Test, & Scan
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,63 +50,3 @@ jobs:
           format: 'table'
           severity: 'HIGH,CRITICAL'
           exit-code: '1'
-
-      - name: Save Docker Image
-        run: |
-          docker save syncup:${{ github.sha }} | gzip > syncup-${{ github.sha }}.tar.gz
-
-      - name: Deploy to Lightsail Instance
-        if: github.ref == 'refs/heads/main'
-        env:
-          PRIVATE_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          HOSTNAME: ${{ secrets.LIGHTSAIL_IP }}
-          USER_NAME: ubuntu
-        run: |
-          # Setup SSH
-          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-
-          # Create deployment script
-          cat > deploy.sh << 'EOF'
-          #!/bin/bash
-          set -e
-
-          # Navigate to app directory
-          cd /opt/syncup
-
-          # Create .env file with secrets
-          cat > .env << ENVEOF
-          POSTGRES_PASSWORD=$1
-          JWT_SECRET_KEY=$2
-          ENVEOF
-
-          # Stop existing containers
-          if [ -f docker-compose.yml ]; then
-            docker-compose down || true
-          fi
-
-          # Load new image
-          docker load < syncup-$3.tar.gz
-
-          # Tag the image
-          docker tag syncup:$3 syncup:latest
-
-          # Start services
-          docker-compose up -d
-
-          # Cleanup old images (keep last 3)
-          docker image prune -f
-          docker images | grep syncup | tail -n +4 | awk '{print $3}' | xargs -r docker rmi || true
-
-          # Remove uploaded tar file
-          rm -f syncup-$3.tar.gz
-
-          echo "Deployment completed successfully!"
-          EOF
-
-          # Copy files to server (NO .env file copy!)
-          scp -i private_key -o StrictHostKeyChecking=no syncup-${{ github.sha }}.tar.gz $USER_NAME@$HOSTNAME:/opt/syncup/
-          scp -i private_key -o StrictHostKeyChecking=no docker-compose.yml $USER_NAME@$HOSTNAME:/opt/syncup/
-          scp -i private_key -o StrictHostKeyChecking=no deploy.sh $USER_NAME@$HOSTNAME:/opt/syncup/
-
-          # Execute deployment (pass secrets as arguments)
-          ssh -i private_key -o StrictHostKeyChecking=no $USER_NAME@$HOSTNAME "chmod +x /opt/syncup/deploy.sh && /opt/syncup/deploy.sh '${{ secrets.POSTGRES_PASSWORD }}' '${{ secrets.JWT_SECRET_KEY }}' ${{ github.sha }}"
