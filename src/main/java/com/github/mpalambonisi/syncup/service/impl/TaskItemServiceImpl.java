@@ -44,7 +44,6 @@ public class TaskItemServiceImpl implements TaskItemService {
 
     @Override
     public TaskItem updateTaskItemStatus(long listId, long taskId, TaskItemStatusDTO dto, User user) {
-        TaskList foundList = checkListAvailabilityAndUserAccess(listId, user);
 
         TaskItem foundTaskItem = taskItemRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
