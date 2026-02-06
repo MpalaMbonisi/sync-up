@@ -1,6 +1,5 @@
 package com.github.mpalambonisi.syncup.dto.response;
 
-import com.github.mpalambonisi.syncup.model.TaskItem;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
