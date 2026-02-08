@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "adeb95c1-0945-4bbb-b2fb-bb812a6c70c3",
 		"name": "SyncUp API",
-		"description": "Task collaboration REST API",
+		"description": "Task collaboration REST API with Account Management",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "42403492"
 	},
@@ -74,6 +74,57 @@
 							"path": [
 								"auth",
 								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Account Management",
+			"item": [
+				{
+					"name": "Get Account Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/account/details",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"account",
+								"details"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Account",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/account/delete",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"account",
+								"delete"
 							]
 						}
 					},
@@ -490,7 +541,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://3.71.52.212"
+			"value": "http://localhost:8080"
 		},
 		{
 			"key": "token",
