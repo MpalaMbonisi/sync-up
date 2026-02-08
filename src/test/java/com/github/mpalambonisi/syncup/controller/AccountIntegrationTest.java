@@ -123,4 +123,19 @@ public class AccountIntegrationTest {
         assertThat(deletedUser).isEmpty();
         assertThat(userCountAfter).isEqualTo(userCountBefore - 1);
     }
+
+    @Test
+    void deleteAccount_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception {
+        // Arrange
+        long userCountBefore = userRepository.count();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/account/delete"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
+
+        // Post-Action Verification
+        long userCountAfter = userRepository.count();
+        assertThat(userCountAfter).isEqualTo(userCountBefore);
+    }
 }
