@@ -204,4 +204,46 @@ public class AccountIntegrationTest {
         assertThat(taskListAfterDeletion.get().getOwner()).isEqualTo(owner);
         assertThat(taskListAfterDeletion.get().getCollaborators()).doesNotContain(testUser);
     }
+
+    @Test
+    void deleteAccount_whenUserIsOwnerAndCollaborator_shouldHandleBothRoles() throws Exception {
+        // Arrange
+        User otherUser = createAndSaveUser("Jane", "Smith", "Password123");
+
+        // testUser owns a task list
+        TaskList ownedTaskList = new TaskList();
+        ownedTaskList.setTitle("My List");
+        ownedTaskList.setOwner(testUser);
+        TaskList savedOwnedList = taskListRepository.save(ownedTaskList);
+
+        // testUser is a collaborator on another task list
+        TaskList collaboratedTaskList = new TaskList();
+        collaboratedTaskList.setTitle("Shared List");
+        collaboratedTaskList.setOwner(otherUser);
+        collaboratedTaskList.getCollaborators().add(testUser);
+        TaskList savedCollaboratedList = taskListRepository.save(collaboratedTaskList);
+
+        Long userId = testUser.getId();
+        Long ownedTaskListId = savedOwnedList.getId();
+        Long collaboratedTaskListId = savedCollaboratedList.getId();
+
+        // Act
+        mockMvc.perform(MockMvcRequestBuilders.delete("/account/delete")
+                        .with(SecurityMockMvcRequestPostProcessors.user(testUser)))
+                .andExpect(status().isNoContent());
+
+        // Assert
+        Optional<User> deletedUser = userRepository.findById(userId);
+        assertThat(deletedUser).isEmpty();
+
+        // Verify owned task list is deleted
+        Optional<TaskList> ownedTaskListAfter = taskListRepository.findById(ownedTaskListId);
+        assertThat(ownedTaskListAfter).isEmpty();
+
+        // Verify collaborated task list still exists but testUser is removed
+        Optional<TaskList> collaboratedTaskListAfter = taskListRepository.findById(collaboratedTaskListId);
+        assertThat(collaboratedTaskListAfter).isPresent();
+        assertThat(collaboratedTaskListAfter.get().getOwner()).isEqualTo(otherUser);
+        assertThat(collaboratedTaskListAfter.get().getCollaborators()).doesNotContain(testUser);
+    }
 }
