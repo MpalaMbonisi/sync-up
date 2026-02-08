@@ -1,16 +1,21 @@
 package com.github.mpalambonisi.syncup.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -79,4 +84,23 @@ public class AccountServiceTest {
         // Verify
         verify(userRepository, times(1)).findById(testUser.getId());
     }
+
+    @Test
+    void deleteAccount_withUserHavingNoTaskLists_shouldDeleteUser() {
+        // Arrange
+        when(taskListRepository.findAll()).thenReturn(new ArrayList<>());
+        when(taskListRepository.findAllByOwner(testUser)).thenReturn(new ArrayList<>());
+        doNothing().when(userRepository).deleteById(testUser.getId());
+
+        // Act
+        accountService.deleteAccount(testUser);
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, userRepository);
+        inOrder.verify(taskListRepository).findAll();
+        inOrder.verify(taskListRepository).findAllByOwner(testUser);
+        inOrder.verify(taskListRepository).deleteAll(any());
+        inOrder.verify(userRepository).deleteById(testUser.getId());
+    }
+
 }
