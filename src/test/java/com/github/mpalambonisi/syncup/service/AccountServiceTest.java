@@ -209,6 +209,42 @@ public class AccountServiceTest {
         inOrder.verify(userRepository).deleteById(testUser.getId());
     }
 
+    @Test
+    void deleteAccount_withMultipleCollaboratorRoles_shouldRemoveFromAllLists() {
+        // Arrange
+        TaskList sharedList1 = new TaskList();
+        sharedList1.setId(1L);
+        sharedList1.setTitle("Shared List 1");
+        sharedList1.setOwner(ownerUser);
+        sharedList1.setCollaborators(new HashSet<>());
+        sharedList1.getCollaborators().add(testUser);
 
+        TaskList sharedList2 = new TaskList();
+        sharedList2.setId(2L);
+        sharedList2.setTitle("Shared List 2");
+        sharedList2.setOwner(collaboratorUser);
+        sharedList2.setCollaborators(new HashSet<>());
+        sharedList2.getCollaborators().add(testUser);
 
+        List<TaskList> allTaskLists = List.of(sharedList1, sharedList2);
+
+        when(taskListRepository.findAll()).thenReturn(allTaskLists);
+        when(taskListRepository.findAllByOwner(testUser)).thenReturn(new ArrayList<>());
+        when(taskListRepository.save(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doNothing().when(userRepository).deleteById(testUser.getId());
+
+        // Act
+        accountService.deleteAccount(testUser);
+
+        // Assert
+        assertThat(sharedList1.getCollaborators()).doesNotContain(testUser);
+        assertThat(sharedList2.getCollaborators()).doesNotContain(testUser);
+
+        // Verify
+        verify(taskListRepository).findAll();
+        verify(taskListRepository, times(2)).save(any(TaskList.class));
+        verify(taskListRepository).findAllByOwner(testUser);
+        verify(taskListRepository).deleteAll(any());
+        verify(userRepository).deleteById(testUser.getId());
+    }
 }
