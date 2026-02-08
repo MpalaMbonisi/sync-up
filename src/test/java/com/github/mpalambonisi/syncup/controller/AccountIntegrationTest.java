@@ -170,4 +170,38 @@ public class AccountIntegrationTest {
         assertThat(taskListCountAfter).isLessThan(taskListCountBefore);
         assertThat(taskListRepository.findAllByOwner(testUser)).isEmpty();
     }
+
+    @Test
+    void deleteAccount_whenUserIsCollaborator_shouldRemoveFromCollaboratorsAndDeleteAccount() throws Exception {
+        // Arrange
+        User owner = createAndSaveUser("John", "Doe", "Password123");
+
+        TaskList taskList = new TaskList();
+        taskList.setTitle("Shared List");
+        taskList.setOwner(owner);
+        taskList.getCollaborators().add(testUser);
+        TaskList savedTaskList = taskListRepository.save(taskList);
+
+        Long userId = testUser.getId();
+        Long taskListId = savedTaskList.getId();
+
+        // Verify testUser is a collaborator before deletion
+        TaskList beforeDeletion = taskListRepository.findById(taskListId).orElseThrow();
+        assertThat(beforeDeletion.getCollaborators()).contains(testUser);
+
+        // Act
+        mockMvc.perform(MockMvcRequestBuilders.delete("/account/delete")
+                        .with(SecurityMockMvcRequestPostProcessors.user(testUser)))
+                .andExpect(status().isNoContent());
+
+        // Assert
+        Optional<User> deletedUser = userRepository.findById(userId);
+        assertThat(deletedUser).isEmpty();
+
+        // Verify that the task list still exists but testUser is removed from collaborators
+        Optional<TaskList> taskListAfterDeletion = taskListRepository.findById(taskListId);
+        assertThat(taskListAfterDeletion).isPresent();
+        assertThat(taskListAfterDeletion.get().getOwner()).isEqualTo(owner);
+        assertThat(taskListAfterDeletion.get().getCollaborators()).doesNotContain(testUser);
+    }
 }
