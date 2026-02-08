@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -135,5 +136,36 @@ public class AccountServiceTest {
         inOrder.verify(taskListRepository).deleteAll(ownedTaskLists);
         inOrder.verify(userRepository).deleteById(testUser.getId());
     }
+
+    @Test
+    void deleteAccount_withUserAsCollaborator_shouldRemoveFromCollaboratorsAndDeleteUser() {
+        // Arrange
+        TaskList sharedTaskList = new TaskList();
+        sharedTaskList.setId(1L);
+        sharedTaskList.setTitle("Shared List");
+        sharedTaskList.setOwner(ownerUser);
+        sharedTaskList.setCollaborators(new HashSet<>());
+        sharedTaskList.getCollaborators().add(testUser);
+
+        when(taskListRepository.findAll()).thenReturn(List.of(sharedTaskList));
+        when(taskListRepository.findAllByOwner(testUser)).thenReturn(new ArrayList<>());
+        when(taskListRepository.save(sharedTaskList)).thenReturn(sharedTaskList);
+        doNothing().when(userRepository).deleteById(testUser.getId());
+
+        // Act
+        accountService.deleteAccount(testUser);
+
+        // Assert
+        assertThat(sharedTaskList.getCollaborators()).doesNotContain(testUser);
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, userRepository);
+        inOrder.verify(taskListRepository).findAll();
+        inOrder.verify(taskListRepository).save(sharedTaskList);
+        inOrder.verify(taskListRepository).findAllByOwner(testUser);
+        inOrder.verify(taskListRepository).deleteAll(any());
+        inOrder.verify(userRepository).deleteById(testUser.getId());
+    }
+
 
 }
