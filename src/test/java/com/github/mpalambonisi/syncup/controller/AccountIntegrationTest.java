@@ -21,7 +21,11 @@ import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.Optional;
 
 @Testcontainers
 @Transactional
@@ -98,5 +102,25 @@ public class AccountIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.get("/account/details"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
+    }
+
+    @Test
+    void deleteAccount_asAuthenticatedUser_shouldReturn204AndDeleteUser() throws Exception {
+        // Arrange
+        long userCountBefore = userRepository.count();
+        Long userId = testUser.getId();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.delete("/account/delete")
+                        .with(SecurityMockMvcRequestPostProcessors.user(testUser)))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        // Post-Action Verification
+        long userCountAfter = userRepository.count();
+        Optional<User> deletedUser = userRepository.findById(userId);
+
+        assertThat(deletedUser).isEmpty();
+        assertThat(userCountAfter).isEqualTo(userCountBefore - 1);
     }
 }
