@@ -8,6 +8,10 @@ import com.github.mpalambonisi.syncup.service.JwtService;
 import com.github.mpalambonisi.syncup.service.impl.UserServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,9 +33,11 @@ public class AuthController {
     private final UserServiceImpl userService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@Valid @RequestBody UserRegistrationDTO dto){
+    public ResponseEntity<Map<String,String>> registerUser(@Valid @RequestBody UserRegistrationDTO dto){
         userService.registerUser(dto);
-        return new ResponseEntity<>("User registered successfully!", HttpStatus.CREATED);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "User registered successfully!");
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PostMapping("/login")

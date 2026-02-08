@@ -69,7 +69,7 @@ public class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
-                .andExpect(content().string("User registered successfully!"));
+                .andExpect(jsonPath("$.message").value("User registered successfully!"));
 
         // Post-Action Verification
         Optional<User> userOptional = userRepository.findByUsername("mbonisimpala");
