@@ -1,0 +1,94 @@
+package com.github.mpalambonisi.syncup.controller;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mpalambonisi.syncup.model.User;
+import com.github.mpalambonisi.syncup.repository.TaskListRepository;
+import com.github.mpalambonisi.syncup.repository.UserRepository;
+
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@Testcontainers
+@Transactional
+@AutoConfigureMockMvc
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class AccountIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TaskListRepository taskListRepository;
+
+    @Autowired
+    private PasswordEncoder encoder;
+
+    private User testUser;
+
+    @Container
+    public static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:15-alpine");
+
+    @DynamicPropertySource
+    static void postgresqlProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
+        registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
+    }
+
+    @BeforeEach
+    void setUp() {
+        testUser = new User();
+        testUser.setUsername("nicolesmith");
+        testUser.setFirstName("Nicole");
+        testUser.setLastName("Smith");
+        testUser.setEmail("nicolesmith@example.com");
+        testUser.setPassword(encoder.encode("StrongPassword1234"));
+        testUser = userRepository.save(testUser);
+    }
+
+    private User createAndSaveUser(String firstName, String lastName, String password) {
+        String username = (firstName + lastName).toLowerCase();
+        User user = new User();
+        user.setUsername(username);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(username + "@example.com");
+        user.setPassword(encoder.encode(password));
+        return userRepository.save(user);
+    }
+
+    @Test
+    void getAccountDetails_asAuthenticatedUser_shouldReturn200AndUserDetails() throws Exception {
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/account/details")
+                        .with(SecurityMockMvcRequestPostProcessors.user(testUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(testUser.getId()))
+                .andExpect(jsonPath("$.username").value("nicolesmith"))
+                .andExpect(jsonPath("$.firstName").value("Nicole"))
+                .andExpect(jsonPath("$.lastName").value("Smith"))
+                .andExpect(jsonPath("$.email").value("nicolesmith@example.com"))
+                .andExpect(jsonPath("$.password").doesNotExist());
+    }
+}
