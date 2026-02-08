@@ -167,5 +167,48 @@ public class AccountServiceTest {
         inOrder.verify(userRepository).deleteById(testUser.getId());
     }
 
+    @Test
+    void deleteAccount_withUserAsOwnerAndCollaborator_shouldHandleBothRoles() {
+        // Arrange
+        // Task list owned by testUser
+        TaskList ownedTaskList = new TaskList();
+        ownedTaskList.setId(1L);
+        ownedTaskList.setTitle("My List");
+        ownedTaskList.setOwner(testUser);
+        ownedTaskList.setCollaborators(new HashSet<>());
+
+        // Task list where testUser is a collaborator
+        TaskList sharedTaskList = new TaskList();
+        sharedTaskList.setId(2L);
+        sharedTaskList.setTitle("Shared List");
+        sharedTaskList.setOwner(ownerUser);
+        sharedTaskList.setCollaborators(new HashSet<>());
+        sharedTaskList.getCollaborators().add(testUser);
+
+        List<TaskList> allTaskLists = List.of(ownedTaskList, sharedTaskList);
+        List<TaskList> ownedTaskLists = List.of(ownedTaskList);
+
+        when(taskListRepository.findAll()).thenReturn(allTaskLists);
+        when(taskListRepository.findAllByOwner(testUser)).thenReturn(ownedTaskLists);
+        when(taskListRepository.save(sharedTaskList)).thenReturn(sharedTaskList);
+        doNothing().when(taskListRepository).deleteAll(ownedTaskLists);
+        doNothing().when(userRepository).deleteById(testUser.getId());
+
+        // Act
+        accountService.deleteAccount(testUser);
+
+        // Assert
+        assertThat(sharedTaskList.getCollaborators()).doesNotContain(testUser);
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, userRepository);
+        inOrder.verify(taskListRepository).findAll();
+        inOrder.verify(taskListRepository).save(sharedTaskList);
+        inOrder.verify(taskListRepository).findAllByOwner(testUser);
+        inOrder.verify(taskListRepository).deleteAll(ownedTaskLists);
+        inOrder.verify(userRepository).deleteById(testUser.getId());
+    }
+
+
 
 }
