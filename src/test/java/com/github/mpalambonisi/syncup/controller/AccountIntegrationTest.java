@@ -17,6 +17,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
@@ -137,5 +138,36 @@ public class AccountIntegrationTest {
         // Post-Action Verification
         long userCountAfter = userRepository.count();
         assertThat(userCountAfter).isEqualTo(userCountBefore);
+    }
+
+    @Test
+    void deleteAccount_whenUserOwnsTaskLists_shouldDeleteUserAndOwnedTaskLists() throws Exception {
+        // Arrange
+        TaskList taskList1 = new TaskList();
+        taskList1.setTitle("Shopping List");
+        taskList1.setOwner(testUser);
+        taskListRepository.save(taskList1);
+
+        TaskList taskList2 = new TaskList();
+        taskList2.setTitle("Todo List");
+        taskList2.setOwner(testUser);
+        taskListRepository.save(taskList2);
+
+        long taskListCountBefore = taskListRepository.count();
+        Long userId = testUser.getId();
+
+        // Act
+        mockMvc.perform(MockMvcRequestBuilders.delete("/account/delete")
+                        .with(SecurityMockMvcRequestPostProcessors.user(testUser)))
+                .andExpect(status().isNoContent());
+
+        // Assert
+        Optional<User> deletedUser = userRepository.findById(userId);
+        assertThat(deletedUser).isEmpty();
+
+        // Verify that task lists owned by the user are deleted
+        long taskListCountAfter = taskListRepository.count();
+        assertThat(taskListCountAfter).isLessThan(taskListCountBefore);
+        assertThat(taskListRepository.findAllByOwner(testUser)).isEmpty();
     }
 }
