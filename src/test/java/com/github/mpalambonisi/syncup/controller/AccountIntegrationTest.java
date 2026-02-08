@@ -16,14 +16,12 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.util.Optional;
@@ -36,9 +34,6 @@ public class AccountIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Autowired
     private UserRepository userRepository;
