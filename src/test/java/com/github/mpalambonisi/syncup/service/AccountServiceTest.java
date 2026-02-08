@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
@@ -21,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.github.mpalambonisi.syncup.exception.UserNotFoundException;
+import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
@@ -100,6 +102,37 @@ public class AccountServiceTest {
         inOrder.verify(taskListRepository).findAll();
         inOrder.verify(taskListRepository).findAllByOwner(testUser);
         inOrder.verify(taskListRepository).deleteAll(any());
+        inOrder.verify(userRepository).deleteById(testUser.getId());
+    }
+
+    @Test
+    void deleteAccount_withUserOwningTaskLists_shouldDeleteTaskListsAndUser() {
+        // Arrange
+        TaskList taskList1 = new TaskList();
+        taskList1.setId(1L);
+        taskList1.setTitle("Shopping List");
+        taskList1.setOwner(testUser);
+
+        TaskList taskList2 = new TaskList();
+        taskList2.setId(2L);
+        taskList2.setTitle("Todo List");
+        taskList2.setOwner(testUser);
+
+        List<TaskList> ownedTaskLists = List.of(taskList1, taskList2);
+
+        when(taskListRepository.findAll()).thenReturn(new ArrayList<>());
+        when(taskListRepository.findAllByOwner(testUser)).thenReturn(ownedTaskLists);
+        doNothing().when(taskListRepository).deleteAll(ownedTaskLists);
+        doNothing().when(userRepository).deleteById(testUser.getId());
+
+        // Act
+        accountService.deleteAccount(testUser);
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, userRepository);
+        inOrder.verify(taskListRepository).findAll();
+        inOrder.verify(taskListRepository).findAllByOwner(testUser);
+        inOrder.verify(taskListRepository).deleteAll(ownedTaskLists);
         inOrder.verify(userRepository).deleteById(testUser.getId());
     }
 
