@@ -91,4 +91,12 @@ public class AccountIntegrationTest {
                 .andExpect(jsonPath("$.email").value("nicolesmith@example.com"))
                 .andExpect(jsonPath("$.password").doesNotExist());
     }
+
+    @Test
+    void getAccountDetails_asUnauthenticatedUser_shouldReturn401Unauthorised() throws Exception {
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/account/details"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("User is unauthorised! Authentication Failed!"));
+    }
 }
