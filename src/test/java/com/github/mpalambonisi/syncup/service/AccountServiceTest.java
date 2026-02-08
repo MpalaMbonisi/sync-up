@@ -6,6 +6,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
+
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.github.mpalambonisi.syncup.exception.UserNotFoundException;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
 import com.github.mpalambonisi.syncup.repository.UserRepository;
@@ -58,6 +61,20 @@ public class AccountServiceTest {
         assertThat(result.getFirstName()).isEqualTo("Nicole");
         assertThat(result.getLastName()).isEqualTo("Smith");
         assertThat(result.getEmail()).isEqualTo("nicolesmith@example.com");
+
+        // Verify
+        verify(userRepository, times(1)).findById(testUser.getId());
+    }
+
+    @Test
+    void getAccountDetails_withNonExistentUser_shouldThrowException() {
+        // Arrange
+        when(userRepository.findById(testUser.getId())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        UserNotFoundException exception = Assertions.assertThrows(UserNotFoundException.class,
+            () -> accountService.getAccountDetails(testUser));
+        assertThat(exception.getMessage()).isEqualTo("User not found!");
 
         // Verify
         verify(userRepository, times(1)).findById(testUser.getId());
