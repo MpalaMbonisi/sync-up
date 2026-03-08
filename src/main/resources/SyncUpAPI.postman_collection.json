@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "adeb95c1-0945-4bbb-b2fb-bb812a6c70c3",
 		"name": "SyncUp API",
-		"description": "Task collaboration REST API with Account Management",
+		"description": "Task collaboration REST API with Account Management, Task Deletion, and List Duplication",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "42403492"
 	},
@@ -33,7 +33,8 @@
 								"auth",
 								"register"
 							]
-						}
+						},
+						"description": "Register a new user account"
 					},
 					"response": []
 				},
@@ -75,11 +76,13 @@
 								"auth",
 								"login"
 							]
-						}
+						},
+						"description": "Authenticate user and receive JWT token"
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "User registration and authentication endpoints"
 		},
 		{
 			"name": "Account Management",
@@ -103,7 +106,8 @@
 								"account",
 								"details"
 							]
-						}
+						},
+						"description": "Get authenticated user's account details"
 					},
 					"response": []
 				},
@@ -126,11 +130,13 @@
 								"account",
 								"delete"
 							]
-						}
+						},
+						"description": "Delete user account and all associated data"
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "User account management endpoints"
 		},
 		{
 			"name": "Task Lists",
@@ -154,12 +160,28 @@
 								"list",
 								"all"
 							]
-						}
+						},
+						"description": "Get all task lists owned by or shared with the user"
 					},
 					"response": []
 				},
 				{
 					"name": "Create Task List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"  const response = pm.response.json();",
+									"  pm.collectionVariables.set('listId', response.id);",
+									"  console.log('List ID saved:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -185,7 +207,8 @@
 								"list",
 								"create"
 							]
-						}
+						},
+						"description": "Create a new task list"
 					},
 					"response": []
 				},
@@ -200,15 +223,16 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/list/1",
+							"raw": "{{baseUrl}}/list/{{listId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"list",
-								"1"
+								"{{listId}}"
 							]
-						}
+						},
+						"description": "Get a specific task list by ID"
 					},
 					"response": []
 				},
@@ -231,19 +255,168 @@
 							"raw": "{\n  \"title\": \"Updated Task List Title\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/list/1/title/update",
+							"raw": "{{baseUrl}}/list/{{listId}}/title/update",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"list",
-								"1",
+								"{{listId}}",
 								"title",
 								"update"
 							]
-						}
+						},
+						"description": "Update the title of a task list (owner only)"
 					},
 					"response": []
+				},
+				{
+					"name": "Duplicate List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"  const response = pm.response.json();",
+									"  pm.collectionVariables.set('duplicatedListId', response.id);",
+									"  console.log('Duplicated List ID saved:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"newTitle\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/list/{{listId}}/duplicate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"list",
+								"{{listId}}",
+								"duplicate"
+							]
+						},
+						"description": "Duplicate a task list. If newTitle is empty or omitted, auto-generates title with '(Copy)' suffix. All tasks are copied and reset to incomplete. Collaborators are not copied. Current user becomes owner of the duplicate."
+					},
+					"response": [
+						{
+							"name": "Duplicate with Auto-Generated Title",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"newTitle\": \"\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/list/1/duplicate",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"list",
+										"1",
+										"duplicate"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"id\": 2,\n  \"title\": \"My First Task List (Copy)\",\n  \"owner\": \"johndoe\",\n  \"collaborators\": [],\n  \"tasks\": [\n    {\n      \"id\": 10,\n      \"description\": \"Buy milk\",\n      \"completed\": false,\n      \"taskListTitle\": \"My First Task List (Copy)\"\n    }\n  ]\n}"
+						},
+						{
+							"name": "Duplicate with Custom Title",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"newTitle\": \"My Custom List\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/list/1/duplicate",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"list",
+										"1",
+										"duplicate"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"id\": 3,\n  \"title\": \"My Custom List\",\n  \"owner\": \"johndoe\",\n  \"collaborators\": [],\n  \"tasks\": []\n}"
+						}
+					]
 				},
 				{
 					"name": "Delete List",
@@ -256,19 +429,21 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/list/1",
+							"raw": "{{baseUrl}}/list/{{listId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"list",
-								"1"
+								"{{listId}}"
 							]
-						}
+						},
+						"description": "Delete a task list (owner only)"
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Task list management endpoints"
 		},
 		{
 			"name": "Collaborators",
@@ -292,17 +467,18 @@
 							"raw": "{\n  \"collaborators\": [\"collaborator1\", \"collaborator2\"]\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/list/1/collaborator/add",
+							"raw": "{{baseUrl}}/list/{{listId}}/collaborator/add",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"list",
-								"1",
+								"{{listId}}",
 								"collaborator",
 								"add"
 							]
-						}
+						},
+						"description": "Add collaborators to a task list (owner only)"
 					},
 					"response": []
 				},
@@ -317,17 +493,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/list/1/collaborator/all",
+							"raw": "{{baseUrl}}/list/{{listId}}/collaborator/all",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"list",
-								"1",
+								"{{listId}}",
 								"collaborator",
 								"all"
 							]
-						}
+						},
+						"description": "Get all collaborators of a task list"
 					},
 					"response": []
 				},
@@ -350,27 +527,44 @@
 							"raw": "{\n  \"username\": \"collaborator1\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/list/1/collaborator/remove",
+							"raw": "{{baseUrl}}/list/{{listId}}/collaborator/remove",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"list",
-								"1",
+								"{{listId}}",
 								"collaborator",
 								"remove"
 							]
-						}
+						},
+						"description": "Remove a collaborator from a task list (owner only)"
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Task list collaboration endpoints"
 		},
 		{
 			"name": "Tasks",
 			"item": [
 				{
 					"name": "Create Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"  const response = pm.response.json();",
+									"  pm.collectionVariables.set('taskId', response.id);",
+									"  console.log('Task ID saved:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -388,17 +582,18 @@
 							"raw": "{\n  \"description\": \"Complete the project documentation\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/list/1/task/create",
+							"raw": "{{baseUrl}}/list/{{listId}}/task/create",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"list",
-								"1",
+								"{{listId}}",
 								"task",
 								"create"
 							]
-						}
+						},
+						"description": "Create a new task in a task list"
 					},
 					"response": []
 				},
@@ -413,17 +608,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/list/1/task/1",
+							"raw": "{{baseUrl}}/list/{{listId}}/task/{{taskId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"list",
-								"1",
+								"{{listId}}",
 								"task",
-								"1"
+								"{{taskId}}"
 							]
-						}
+						},
+						"description": "Get a specific task by ID"
 					},
 					"response": []
 				},
@@ -446,18 +642,19 @@
 							"raw": "{\n  \"completed\": true\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/list/1/task/1/status",
+							"raw": "{{baseUrl}}/list/{{listId}}/task/{{taskId}}/status",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"list",
-								"1",
+								"{{listId}}",
 								"task",
-								"1",
+								"{{taskId}}",
 								"status"
 							]
-						}
+						},
+						"description": "Update the completion status of a task"
 					},
 					"response": []
 				},
@@ -480,22 +677,151 @@
 							"raw": "{\n  \"description\": \"Updated task description\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/list/1/task/1/description",
+							"raw": "{{baseUrl}}/list/{{listId}}/task/{{taskId}}/description",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"list",
-								"1",
+								"{{listId}}",
 								"task",
-								"1",
+								"{{taskId}}",
 								"description"
 							]
-						}
+						},
+						"description": "Update the description of a task"
 					},
 					"response": []
+				},
+				{
+					"name": "Delete Task",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/list/{{listId}}/task/{{taskId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"list",
+								"{{listId}}",
+								"task",
+								"{{taskId}}"
+							]
+						},
+						"description": "Delete a task from a task list. Both owners and collaborators can delete tasks. Returns 204 No Content on success."
+					},
+					"response": [
+						{
+							"name": "Success - Task Deleted",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/list/1/task/5",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"list",
+										"1",
+										"task",
+										"5"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						},
+						{
+							"name": "Error - Task Not Found",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/list/1/task/999",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"list",
+										"1",
+										"task",
+										"999"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"timestamp\": \"08-03-2026 10:30:45\",\n  \"message\": [\n    \"Task item not found!\"\n  ]\n}"
+						},
+						{
+							"name": "Error - Task Belongs to Different List",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/list/1/task/5",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"list",
+										"1",
+										"task",
+										"5"
+									]
+								}
+							},
+							"status": "Forbidden",
+							"code": 403,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"timestamp\": \"08-03-2026 10:30:45\",\n  \"message\": [\n    \"Task does not belong to the specified list!\"\n  ]\n}"
+						}
+					]
 				}
-			]
+			],
+			"description": "Task item management endpoints"
 		},
 		{
 			"name": "Health Check",
@@ -511,7 +837,8 @@
 						"actuator",
 						"health"
 					]
-				}
+				},
+				"description": "Check application health status"
 			},
 			"response": []
 		}
@@ -541,11 +868,28 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:8080"
+			"value": "http://localhost:8080",
+			"type": "string"
 		},
 		{
 			"key": "token",
-			"value": ""
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "listId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "taskId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "duplicatedListId",
+			"value": "",
+			"type": "string"
 		}
 	]
 }
