@@ -2,6 +2,7 @@ package com.github.mpalambonisi.syncup.service;
 
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
+import com.github.mpalambonisi.syncup.dto.request.TaskListDuplicateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.dto.request.TaskListTitleUpdateDTO;
 import com.github.mpalambonisi.syncup.model.TaskList;
@@ -15,6 +16,7 @@ public interface TaskListService {
     TaskList saveTaskList(User user, TaskListCreateDTO dto);
     TaskList getListById(Long id, User user);
     void removeListById(Long id, User user);
+    TaskList duplicateList(Long id, TaskListDuplicateDTO dto, User user);
     Set<User> addCollaboratorsByUsername(Long id, AddCollaboratorsRequestDTO dto, User user);
     void removeCollaboratorByUsername(Long id, RemoveCollaboratorRequestDTO dto, User user);
     Set<User> getAllCollaborators(Long id, User user);

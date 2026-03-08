@@ -2,12 +2,14 @@ package com.github.mpalambonisi.syncup.service.impl;
 
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
+import com.github.mpalambonisi.syncup.dto.request.TaskListDuplicateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.dto.request.TaskListTitleUpdateDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.exception.TitleAlreadyExistsException;
 import com.github.mpalambonisi.syncup.exception.UsernameExistsException;
+import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
@@ -133,9 +135,65 @@ public class TaskListServiceImpl implements TaskListService {
         return taskListRepository.saveAndFlush(foundList);
     }
 
+    @Override
+    public TaskList duplicateList(Long id, TaskListDuplicateDTO dto, User user) {
+        // Find the original list - user must have access (owner or collaborator)
+        TaskList originalList = checkListAvailabilityAndUserAccess(id, user);
+
+        // Generate new title
+        String newTitle;
+        if (dto.getNewTitle() != null && !dto.getNewTitle().trim().isEmpty()) {
+            newTitle = dto.getNewTitle().trim();
+        } else {
+            newTitle = generateCopyTitle(originalList.getTitle());
+        }
+
+        // Check if user already has a list with this title
+        if(taskListRepository.findByTitleAndOwner(newTitle, user).isPresent()){
+            throw new TitleAlreadyExistsException("You already have a list with this title!");
+        }
+
+        TaskList duplicatedList = new TaskList();
+        duplicatedList.setTitle(newTitle);
+        duplicatedList.setOwner(user);
+
+        // Create tasks and link them in memory
+        for (TaskItem originalTask : originalList.getTasks()) {
+            TaskItem newTask = new TaskItem();
+            newTask.setDescription(originalTask.getDescription());
+            newTask.setCompleted(false);
+            newTask.setTaskList(duplicatedList); // This sets the FK relationship
+            duplicatedList.getTasks().add(newTask);
+        }
+
+        // Save EVERYTHING in one single database round-trip
+        return taskListRepository.saveAndFlush(duplicatedList);
+    }
+
     private TaskList checkListAvailabilityAndUserAccess(long id, User user){
 
         return taskListRepository.findByIdAndUserHasAccess(id, user)
                 .orElseThrow(() -> new ListNotFoundException("List not found or you don't have access to it!"));
+    }
+
+    /**
+     * Generates a title for duplicated list with "(Copy)" suffix
+     * Handles existing copies by incrementing: "(Copy 2)", "(Copy 3)", etc.
+     */
+    private String generateCopyTitle(String originalTitle) {
+        // Check if title already ends with (Copy X) pattern
+        if (originalTitle.matches(".*\\(Copy \\d+\\)$")) {
+            // Extract the number and increment
+            String numberPart = originalTitle.substring(originalTitle.lastIndexOf("(Copy ") + 6, originalTitle.length() - 1);
+            int copyNumber = Integer.parseInt(numberPart);
+            String basePart = originalTitle.substring(0, originalTitle.lastIndexOf("(Copy "));
+            return basePart + "(Copy " + (copyNumber + 1) + ")";
+        } else if (originalTitle.endsWith("(Copy)")) {
+            // Change (Copy) to (Copy 2)
+            return originalTitle.substring(0, originalTitle.length() - 6) + "(Copy 2)";
+        } else {
+            // Add (Copy) for the first time
+            return originalTitle + " (Copy)";
+        }
     }
 }
