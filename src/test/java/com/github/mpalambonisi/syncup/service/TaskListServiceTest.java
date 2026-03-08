@@ -3,10 +3,12 @@ package com.github.mpalambonisi.syncup.service;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
+import com.github.mpalambonisi.syncup.dto.request.TaskListDuplicateDTO;
 import com.github.mpalambonisi.syncup.dto.request.TaskListTitleUpdateDTO;
 import com.github.mpalambonisi.syncup.exception.AccessDeniedException;
 import com.github.mpalambonisi.syncup.exception.ListNotFoundException;
 import com.github.mpalambonisi.syncup.exception.TitleAlreadyExistsException;
+import com.github.mpalambonisi.syncup.model.TaskItem;
 import com.github.mpalambonisi.syncup.model.TaskList;
 import com.github.mpalambonisi.syncup.model.User;
 import com.github.mpalambonisi.syncup.repository.TaskListRepository;
@@ -23,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -763,5 +766,479 @@ public class TaskListServiceTest {
         inorder.verify(taskListRepo).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
         inorder.verify(taskListRepo, never()).findByTitleAndOwner(any(), any());
         inorder.verify(taskListRepo, never()).saveAndFlush(any());
+    }
+
+     @Test
+    void duplicateList_asOwner_withDefaultTitle_success(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shopping List");
+        originalList.setOwner(ownerUser);
+
+        TaskItem task1 = new TaskItem();
+        task1.setId(1L);
+        task1.setDescription("Buy milk");
+        task1.setCompleted(true);
+        task1.setTaskList(originalList);
+
+        TaskItem task2 = new TaskItem();
+        task2.setId(2L);
+        task2.setDescription("Buy bread");
+        task2.setCompleted(false);
+        task2.setTaskList(originalList);
+
+        originalList.getTasks().add(task1);
+        originalList.getTasks().add(task2);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO(); // empty DTO - use default title
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Shopping List (Copy)", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> {
+            TaskList savedList = invocation.getArgument(0);
+            savedList.setId(2L);
+            return savedList;
+        });
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList).isNotNull();
+        assertThat(duplicatedList.getTitle()).isEqualTo("Shopping List (Copy)");
+        assertThat(duplicatedList.getOwner()).isEqualTo(ownerUser);
+        assertThat(duplicatedList.getTasks()).hasSize(2);
+        assertThat(duplicatedList.getTasks().stream().allMatch(task -> !task.getCompleted())).isTrue();
+        assertThat(duplicatedList.getCollaborators()).isEmpty();
+        assertThat(duplicatedList.getId()).isNotEqualTo(originalListId);
+
+        // Verify
+        verify(taskListRepo).findByIdAndUserHasAccess(originalListId, ownerUser);
+        verify(taskListRepo).findByTitleAndOwner("Shopping List (Copy)", ownerUser);
+        verify(taskListRepo).saveAndFlush(any(TaskList.class));
+    }
+
+    @Test
+    void duplicateList_asCollaborator_becomesOwner(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shared List");
+        originalList.setOwner(ownerUser);
+        originalList.getCollaborators().add(collaboratorUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, collaboratorUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Shared List (Copy)", collaboratorUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> {
+            TaskList savedList = invocation.getArgument(0);
+            savedList.setId(2L);
+            return savedList;
+        });
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, collaboratorUser);
+
+        // Assert
+        assertThat(duplicatedList).isNotNull();
+        assertThat(duplicatedList.getOwner()).isEqualTo(collaboratorUser);
+        assertThat(duplicatedList.getOwner()).isNotEqualTo(ownerUser);
+        assertThat(duplicatedList.getCollaborators()).isEmpty();
+
+        // Verify
+        verify(taskListRepo).findByIdAndUserHasAccess(originalListId, collaboratorUser);
+        verify(taskListRepo).saveAndFlush(any(TaskList.class));
+    }
+
+    @Test
+    void duplicateList_withCustomTitle_success(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shopping List");
+        originalList.setOwner(ownerUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+        dto.setNewTitle("My Custom List");
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("My Custom List", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> {
+            TaskList savedList = invocation.getArgument(0);
+            savedList.setId(2L);
+            return savedList;
+        });
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList).isNotNull();
+        assertThat(duplicatedList.getTitle()).isEqualTo("My Custom List");
+        assertThat(duplicatedList.getOwner()).isEqualTo(ownerUser);
+
+        // Verify
+        verify(taskListRepo).findByIdAndUserHasAccess(originalListId, ownerUser);
+        verify(taskListRepo).findByTitleAndOwner("My Custom List", ownerUser);
+        verify(taskListRepo).saveAndFlush(any(TaskList.class));
+    }
+
+    @Test
+    void duplicateList_emptyList_success(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Empty List");
+        originalList.setOwner(ownerUser);
+        originalList.setTasks(new ArrayList<>());
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Empty List (Copy)", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> {
+            TaskList savedList = invocation.getArgument(0);
+            savedList.setId(2L);
+            return savedList;
+        });
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList).isNotNull();
+        assertThat(duplicatedList.getTasks()).isEmpty();
+        assertThat(duplicatedList.getTitle()).isEqualTo("Empty List (Copy)");
+
+        // Verify
+        verify(taskListRepo).findByIdAndUserHasAccess(originalListId, ownerUser);
+        verify(taskListRepo).saveAndFlush(any(TaskList.class));
+    }
+
+    @Test
+    void duplicateList_tasksResetToIncomplete(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Task List");
+        originalList.setOwner(ownerUser);
+
+        TaskItem completedTask = new TaskItem();
+        completedTask.setId(1L);
+        completedTask.setDescription("Completed Task");
+        completedTask.setCompleted(true);
+        completedTask.setTaskList(originalList);
+
+        TaskItem incompleteTask = new TaskItem();
+        incompleteTask.setId(2L);
+        incompleteTask.setDescription("Incomplete Task");
+        incompleteTask.setCompleted(false);
+        incompleteTask.setTaskList(originalList);
+
+        originalList.getTasks().add(completedTask);
+        originalList.getTasks().add(incompleteTask);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Task List (Copy)", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList.getTasks()).hasSize(2);
+        assertThat(duplicatedList.getTasks().stream().allMatch(task -> !task.getCompleted())).isTrue();
+        assertThat(duplicatedList.getTasks().stream().map(TaskItem::getDescription))
+                .containsExactlyInAnyOrder("Completed Task", "Incomplete Task");
+
+        // Verify
+        verify(taskListRepo).saveAndFlush(any(TaskList.class));
+    }
+
+    @Test
+    void duplicateList_collaboratorsNotCopied(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shared List");
+        originalList.setOwner(ownerUser);
+        originalList.getCollaborators().add(collaboratorUser);
+        originalList.getCollaborators().add(unauthorisedUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Shared List (Copy)", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList.getCollaborators()).isEmpty();
+        assertThat(originalList.getCollaborators()).hasSize(2); // Original unchanged
+
+        // Verify
+        verify(taskListRepo).saveAndFlush(any(TaskList.class));
+    }
+
+    @Test
+    void duplicateList_generatesCorrectTitleWithCopy(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shopping List");
+        originalList.setOwner(ownerUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Shopping List (Copy)", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList.getTitle()).isEqualTo("Shopping List (Copy)");
+
+        // Verify
+        verify(taskListRepo).findByTitleAndOwner("Shopping List (Copy)", ownerUser);
+    }
+
+    @Test
+    void duplicateList_generatesCorrectTitleWithCopy2(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shopping List (Copy)");
+        originalList.setOwner(ownerUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Shopping List (Copy 2)", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList.getTitle()).isEqualTo("Shopping List (Copy 2)");
+
+        // Verify
+        verify(taskListRepo).findByTitleAndOwner("Shopping List (Copy 2)", ownerUser);
+    }
+
+    @Test
+    void duplicateList_incrementsCopyNumber(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shopping List (Copy 5)");
+        originalList.setOwner(ownerUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Shopping List (Copy 6)", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList.getTitle()).isEqualTo("Shopping List (Copy 6)");
+
+        // Verify
+        verify(taskListRepo).findByTitleAndOwner("Shopping List (Copy 6)", ownerUser);
+    }
+
+    @Test
+    void duplicateList_handlesEdgeCaseTitles(){
+        // Arrange - Test with very long title
+        long originalListId = 1L;
+        String longTitle = "A".repeat(200);
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle(longTitle);
+        originalList.setOwner(ownerUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner(longTitle + " (Copy)", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList.getTitle()).isEqualTo(longTitle + " (Copy)");
+
+        // Verify
+        verify(taskListRepo).saveAndFlush(any(TaskList.class));
+    }
+
+    @Test
+    void duplicateList_listNotFound_throwsListNotFoundException(){
+        // Arrange
+        long invalidListId = 999L;
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(invalidListId, ownerUser)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
+                () -> taskListService.duplicateList(invalidListId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
+
+        // Verify
+        verify(taskListRepo).findByIdAndUserHasAccess(invalidListId, ownerUser);
+        verify(taskListRepo, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void duplicateList_userHasNoAccess_throwsListNotFoundException(){
+        // Arrange
+        long listId = 1L;
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(listId, unauthorisedUser)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
+                () -> taskListService.duplicateList(listId, dto, unauthorisedUser));
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
+
+        // Verify
+        verify(taskListRepo).findByIdAndUserHasAccess(listId, unauthorisedUser);
+        verify(taskListRepo, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void duplicateList_titleAlreadyExists_throwsTitleAlreadyExistsException(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shopping List");
+        originalList.setOwner(ownerUser);
+
+        TaskList existingList = new TaskList();
+        existingList.setId(2L);
+        existingList.setTitle("Shopping List (Copy)");
+        existingList.setOwner(ownerUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Shopping List (Copy)", ownerUser)).thenReturn(Optional.of(existingList));
+
+        // Act & Assert
+        TitleAlreadyExistsException exception = Assertions.assertThrows(TitleAlreadyExistsException.class,
+                () -> taskListService.duplicateList(originalListId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("You already have a list with this title!");
+
+        // Verify
+        verify(taskListRepo).findByIdAndUserHasAccess(originalListId, ownerUser);
+        verify(taskListRepo).findByTitleAndOwner("Shopping List (Copy)", ownerUser);
+        verify(taskListRepo, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void duplicateList_customTitleAlreadyExists_throwsTitleAlreadyExistsException(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shopping List");
+        originalList.setOwner(ownerUser);
+
+        TaskList existingList = new TaskList();
+        existingList.setId(2L);
+        existingList.setTitle("My Custom Title");
+        existingList.setOwner(ownerUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+        dto.setNewTitle("My Custom Title");
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("My Custom Title", ownerUser)).thenReturn(Optional.of(existingList));
+
+        // Act & Assert
+        TitleAlreadyExistsException exception = Assertions.assertThrows(TitleAlreadyExistsException.class,
+                () -> taskListService.duplicateList(originalListId, dto, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("You already have a list with this title!");
+
+        // Verify
+        verify(taskListRepo).findByIdAndUserHasAccess(originalListId, ownerUser);
+        verify(taskListRepo).findByTitleAndOwner("My Custom Title", ownerUser);
+        verify(taskListRepo, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void duplicateList_emptyCustomTitle_usesAutoGenerated(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shopping List");
+        originalList.setOwner(ownerUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+        dto.setNewTitle("");
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Shopping List (Copy)", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList.getTitle()).isEqualTo("Shopping List (Copy)");
+
+        // Verify
+        verify(taskListRepo).findByTitleAndOwner("Shopping List (Copy)", ownerUser);
+    }
+
+    @Test
+    void duplicateList_whitespaceOnlyTitle_usesAutoGenerated(){
+        // Arrange
+        long originalListId = 1L;
+        TaskList originalList = new TaskList();
+        originalList.setId(originalListId);
+        originalList.setTitle("Shopping List");
+        originalList.setOwner(ownerUser);
+
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+        dto.setNewTitle("   ");
+
+        when(taskListRepo.findByIdAndUserHasAccess(originalListId, ownerUser)).thenReturn(Optional.of(originalList));
+        when(taskListRepo.findByTitleAndOwner("Shopping List (Copy)", ownerUser)).thenReturn(Optional.empty());
+        when(taskListRepo.saveAndFlush(any(TaskList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TaskList duplicatedList = taskListService.duplicateList(originalListId, dto, ownerUser);
+
+        // Assert
+        assertThat(duplicatedList.getTitle()).isEqualTo("Shopping List (Copy)");
+
+        // Verify
+        verify(taskListRepo).findByTitleAndOwner("Shopping List (Copy)", ownerUser);
     }
 }
