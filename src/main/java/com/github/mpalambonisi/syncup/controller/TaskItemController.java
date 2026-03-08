@@ -47,6 +47,15 @@ public class TaskItemController {
         return ResponseEntity.ok(convertToResponseDTO(taskItem));
     }
 
+    @DeleteMapping("/list/{listId}/task/{taskId}")
+    public ResponseEntity<HttpStatus> deleteTask(@PathVariable Long listId, @PathVariable Long taskId,
+                                                @AuthenticationPrincipal User currentUser){
+
+        taskItemService.deleteTask(listId, taskId, currentUser);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
+    }
+
     protected static TaskItemResponseDTO convertToResponseDTO(TaskItem taskItem){
         return TaskItemResponseDTO.builder()
                 .id(taskItem.getId())
