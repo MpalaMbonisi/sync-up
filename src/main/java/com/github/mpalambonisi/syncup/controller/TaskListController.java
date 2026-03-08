@@ -2,6 +2,7 @@ package com.github.mpalambonisi.syncup.controller;
 
 import com.github.mpalambonisi.syncup.dto.request.AddCollaboratorsRequestDTO;
 import com.github.mpalambonisi.syncup.dto.request.RemoveCollaboratorRequestDTO;
+import com.github.mpalambonisi.syncup.dto.request.TaskListDuplicateDTO;
 import com.github.mpalambonisi.syncup.dto.TaskListCreateDTO;
 import com.github.mpalambonisi.syncup.dto.request.TaskListTitleUpdateDTO;
 import com.github.mpalambonisi.syncup.dto.response.TaskItemResponseDTO;
@@ -86,6 +87,15 @@ public class TaskListController {
         TaskListResponseDTO taskListResponseDTO = convertIntoDto(
                 taskListService.updateTaskListTitle(id, dto, currentUser));
         return ResponseEntity.ok(taskListResponseDTO);
+    }
+
+    @PostMapping("/{id}/duplicate")
+    public ResponseEntity<TaskListResponseDTO> duplicateList(@PathVariable Long id,
+                                                              @RequestBody TaskListDuplicateDTO dto,
+                                                              @AuthenticationPrincipal User currentUser){
+        TaskList duplicatedList = taskListService.duplicateList(id, dto, currentUser);
+        TaskListResponseDTO responseDTO = convertIntoDto(duplicatedList);
+        return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
     }
 
     private TaskListResponseDTO convertIntoDto(TaskList taskList){
