@@ -12,4 +12,5 @@ public interface TaskItemService {
     TaskItem updateTaskItemStatus(long listId, long taskId, TaskItemStatusDTO dto, User user);
     TaskItem updateTaskItemDescription(long listId, long taskId, TaskItemDescriptionDTO dto, User user);
     TaskItem getTaskItemById(long listId, long taskId, User user);
+    void deleteTask(long listId, long taskId, User user);
 }

@@ -97,9 +97,28 @@ public class TaskItemServiceImpl implements TaskItemService {
         return foundTaskItem;
     }
 
+    @Override
+    public void deleteTask(long listId, long taskId, User user) {
+        // Check user has access to the list
+        checkListAvailabilityAndUserAccess(listId, user);
+
+        // Find the task
+        TaskItem foundTaskItem = taskItemRepository.findById(taskId)
+            .orElseThrow(() -> new TaskNotFoundException("Task item not found!"));
+
+        // Security Check: Verify the task belongs to the specified list
+        if(!foundTaskItem.getTaskList().getId().equals(listId)){
+            throw new AccessDeniedException("Task does not belong to the specified list!");
+        }
+
+        // Delete the task
+        taskItemRepository.deleteById(taskId);
+    }
+
     private TaskList checkListAvailabilityAndUserAccess(long id, User user){
 
         return taskListRepository.findByIdAndUserHasAccess(id, user)
                 .orElseThrow(() -> new ListNotFoundException("List not found or you don't have access to it!"));
     }
+
 }
