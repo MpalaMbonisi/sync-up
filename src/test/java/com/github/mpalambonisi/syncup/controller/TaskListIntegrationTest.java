@@ -113,6 +113,17 @@ public class TaskListIntegrationTest {
         return savedTaskList;
     }
 
+    private TaskList assertValidTaskListCreation(String taskTitleExpected, TaskList savedTaskList, User expectedUser, List<User> expectedCollaborators){
+        assertThat(savedTaskList).isNotNull();
+        assertThat(savedTaskList.getId()).isNotNull();
+        assertThat(savedTaskList.getOwner()).isEqualTo(expectedUser);
+        assertThat(savedTaskList.getTitle()).isEqualTo(taskTitleExpected);
+        if(!expectedCollaborators.isEmpty()){
+            assertThat(savedTaskList.getCollaborators()).containsAll(expectedCollaborators);
+        }
+        return savedTaskList;
+    }
+
     @Test
     void createList_asOwner_shouldReturn201CreatedAndList() throws Exception{
         // Arrange
@@ -1214,4 +1225,170 @@ public class TaskListIntegrationTest {
                 .andExpect(jsonPath("$.title").value("Shopping List (Copy)"));
     }
 
+    @Test
+    void duplicateList_handlesExistingCopy() throws Exception {
+        // Arrange
+        TaskList originalList = assertValidTaskListCreation(
+                "Shopping List (Copy)",
+                createTaskListAndSave("Shopping List (Copy)", List.of()),
+                ownerUser, List.of());
+
+        long originalListId = originalList.getId();
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + originalListId + "/duplicate")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Shopping List (Copy 2)"));
+    }
+
+    @Test
+    void duplicateList_incrementsExistingNumber() throws Exception {
+        // Arrange
+        TaskList originalList = assertValidTaskListCreation(
+                "Shopping List (Copy 3)",
+                createTaskListAndSave("Shopping List (Copy 3)", List.of()),
+                ownerUser, List.of());
+
+        long originalListId = originalList.getId();
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + originalListId + "/duplicate")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Shopping List (Copy 4)"));
+    }
+
+    @Test
+    void duplicateList_allTasksResetToIncomplete() throws Exception {
+        // Arrange
+        TaskList originalList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser, List.of());
+
+        // Create 2 completed and 2 incomplete tasks
+        TaskItem completed1 = new TaskItem();
+        completed1.setDescription("Completed Task 1");
+        completed1.setCompleted(true);
+        completed1.setTaskList(originalList);
+        taskItemRepository.save(completed1);
+        originalList.getTasks().add(completed1);
+
+        TaskItem completed2 = new TaskItem();
+        completed2.setDescription("Completed Task 2");
+        completed2.setCompleted(true);
+        completed2.setTaskList(originalList);
+        taskItemRepository.save(completed2);
+        originalList.getTasks().add(completed2);
+
+        TaskItem incomplete1 = new TaskItem();
+        incomplete1.setDescription("Incomplete Task 1");
+        incomplete1.setCompleted(false);
+        incomplete1.setTaskList(originalList);
+        taskItemRepository.save(incomplete1);
+        originalList.getTasks().add(incomplete1);
+
+        TaskItem incomplete2 = new TaskItem();
+        incomplete2.setDescription("Incomplete Task 2");
+        incomplete2.setCompleted(false);
+        incomplete2.setTaskList(originalList);
+        taskItemRepository.save(incomplete2);
+        originalList.getTasks().add(incomplete2);
+
+        long originalListId = originalList.getId();
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + originalListId + "/duplicate")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tasks").isArray())
+                .andExpect(jsonPath("$.tasks.length()").value(4))
+                .andExpect(jsonPath("$.tasks[0].completed").value(false))
+                .andExpect(jsonPath("$.tasks[1].completed").value(false))
+                .andExpect(jsonPath("$.tasks[2].completed").value(false))
+                .andExpect(jsonPath("$.tasks[3].completed").value(false));
+    }
+
+    @Test
+    void duplicateList_emptyListWorks() throws Exception {
+        // Arrange
+        TaskList originalList = assertValidTaskListCreation(
+                "Empty List",
+                createTaskListAndSave("Empty List", List.of()),
+                ownerUser, List.of());
+
+        long originalListId = originalList.getId();
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + originalListId + "/duplicate")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Empty List (Copy)"))
+                .andExpect(jsonPath("$.tasks").isArray())
+                .andExpect(jsonPath("$.tasks").isEmpty());
+    }
+
+     @Test
+    void duplicateList_manyTasksCopiedCorrectly() throws Exception {
+        // Arrange
+        TaskList originalList = assertValidTaskListCreation(
+                "Large List",
+                createTaskListAndSave("Large List", List.of()),
+                ownerUser, List.of());
+
+        // Create 50 tasks
+        for (int i = 1; i <= 50; i++) {
+            TaskItem task = new TaskItem();
+            task.setDescription("Task " + i);
+            task.setCompleted(i % 2 == 0); // Half completed, half not
+            task.setTaskList(originalList);
+            taskItemRepository.save(task);
+            originalList.getTasks().add(task);
+        }
+
+        long originalListId = originalList.getId();
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + originalListId + "/duplicate")
+                        .with(SecurityMockMvcRequestPostProcessors.user(ownerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tasks").isArray())
+                .andExpect(jsonPath("$.tasks.length()").value(50));
+    }
+
+    @Test
+    void duplicateList_noAccess_returns404() throws Exception {
+        // Arrange
+        User unauthorizedUser = createUserAndSave("Karen", "Sanders", "VeryStrongPassword1234");
+
+        TaskList originalList = assertValidTaskListCreation(
+                createTaskListAndSave("Shopping List", List.of()),
+                ownerUser, List.of());
+
+        long originalListId = originalList.getId();
+        TaskListDuplicateDTO dto = new TaskListDuplicateDTO();
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.post("/list/" + originalListId + "/duplicate")
+                        .with(SecurityMockMvcRequestPostProcessors.user(unauthorizedUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("List not found or you don't have access to it!"));
+    }
 }
