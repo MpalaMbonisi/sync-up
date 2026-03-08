@@ -678,4 +678,174 @@ public class TaskItemServiceTest {
         inOrder.verify(taskItemRepository, never()).findByDescriptionAndTaskList(any(), any());
         inOrder.verify(taskItemRepository, never()).saveAndFlush(any());
     }
+
+    @Test
+    void deleteTask_asOwner_success(){
+        // Arrange
+        long taskListId = 1L;
+        long taskItemId = 100L;
+        TaskList taskList = createTaskList(taskListId, "Shopping List", null);
+        TaskItem taskItem = createTaskItem(taskItemId, "Buy milk", taskList);
+
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
+        doNothing().when(taskItemRepository).deleteById(taskItemId);
+
+        // Act
+        taskItemService.deleteTask(taskListId, taskItemId, ownerUser);
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
+        inOrder.verify(taskItemRepository).findById(taskItemId);
+        inOrder.verify(taskItemRepository).deleteById(taskItemId);
+    }
+
+    @Test
+    void deleteTask_asCollaborator_success(){
+        // Arrange
+        long taskListId = 1L;
+        long taskItemId = 100L;
+        TaskList taskList = createTaskList(taskListId, "Shopping List", collaboratorUser);
+        TaskItem taskItem = createTaskItem(taskItemId, "Buy milk", taskList);
+
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, collaboratorUser)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
+        doNothing().when(taskItemRepository).deleteById(taskItemId);
+
+        // Act
+        taskItemService.deleteTask(taskListId, taskItemId, collaboratorUser);
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, collaboratorUser);
+        inOrder.verify(taskItemRepository).findById(taskItemId);
+        inOrder.verify(taskItemRepository).deleteById(taskItemId);
+    }
+
+    @Test
+    void deleteTask_listNotFound_throwsListNotFoundException(){
+        // Arrange
+        long invalidTaskListId = 999L;
+        long taskItemId = 100L;
+
+        when(taskListRepository.findByIdAndUserHasAccess(invalidTaskListId, ownerUser)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
+                () -> taskItemService.deleteTask(invalidTaskListId, taskItemId, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
+
+        // Verify
+        verify(taskListRepository).findByIdAndUserHasAccess(invalidTaskListId, ownerUser);
+        verify(taskItemRepository, never()).findById(any());
+        verify(taskItemRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteTask_userHasNoAccess_throwsListNotFoundException(){
+        // Arrange
+        long taskListId = 1L;
+        long taskItemId = 100L;
+
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, unauthorisedUser)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ListNotFoundException exception = Assertions.assertThrows(ListNotFoundException.class,
+                () -> taskItemService.deleteTask(taskListId, taskItemId, unauthorisedUser));
+        assertThat(exception.getMessage()).isEqualTo("List not found or you don't have access to it!");
+
+        // Verify
+        verify(taskListRepository).findByIdAndUserHasAccess(taskListId, unauthorisedUser);
+        verify(taskItemRepository, never()).findById(any());
+        verify(taskItemRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteTask_taskNotFound_throwsTaskNotFoundException(){
+        // Arrange
+        long taskListId = 1L;
+        long invalidTaskItemId = 999L;
+        TaskList taskList = createTaskList(taskListId, "Shopping List", null);
+
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findById(invalidTaskItemId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        TaskNotFoundException exception = Assertions.assertThrows(TaskNotFoundException.class,
+                () -> taskItemService.deleteTask(taskListId, invalidTaskItemId, ownerUser));
+        assertThat(exception.getMessage()).isEqualTo("Task item not found!");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
+        inOrder.verify(taskItemRepository).findById(invalidTaskItemId);
+        inOrder.verify(taskItemRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteTask_taskBelongsToDifferentList_throwsAccessDeniedException(){
+        // Arrange
+        TaskList allowedList = createTaskList(1L, "Allowed List", null);
+        TaskList forbiddenList = createTaskList(2L, "Forbidden List", null);
+        TaskItem taskFromForbiddenList = createTaskItem(100L, "Task from different list", forbiddenList);
+
+        when(taskListRepository.findByIdAndUserHasAccess(1L, ownerUser)).thenReturn(Optional.of(allowedList));
+        when(taskItemRepository.findById(100L)).thenReturn(Optional.of(taskFromForbiddenList));
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskItemService.deleteTask(1L, 100L, ownerUser));
+        assertThat(exception.getMessage()).contains("Task does not belong to the specified list!");
+
+        // Verify
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(1L, ownerUser);
+        inOrder.verify(taskItemRepository).findById(100L);
+        inOrder.verify(taskItemRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteTask_verifiesUserAccessToList(){
+        // Arrange
+        long taskListId = 1L;
+        long taskItemId = 100L;
+        TaskList taskList = createTaskList(taskListId, "Shopping List", null);
+        TaskItem taskItem = createTaskItem(taskItemId, "Buy milk", taskList);
+
+        when(taskListRepository.findByIdAndUserHasAccess(taskListId, ownerUser)).thenReturn(Optional.of(taskList));
+        when(taskItemRepository.findById(taskItemId)).thenReturn(Optional.of(taskItem));
+        doNothing().when(taskItemRepository).deleteById(taskItemId);
+
+        // Act
+        taskItemService.deleteTask(taskListId, taskItemId, ownerUser);
+
+        // Verify - ensure access check is performed before deletion
+        InOrder inOrder = inOrder(taskListRepository, taskItemRepository);
+        inOrder.verify(taskListRepository).findByIdAndUserHasAccess(taskListId, ownerUser);
+        inOrder.verify(taskItemRepository).findById(taskItemId);
+        inOrder.verify(taskItemRepository).deleteById(taskItemId);
+    }
+
+    @Test
+    void deleteTask_verifiesTaskBelongsToList(){
+        // Arrange
+        TaskList listA = createTaskList(1L, "List A", null);
+        TaskList listB = createTaskList(2L, "List B", null);
+        TaskItem taskFromListA = createTaskItem(100L, "Task A", listA);
+
+        // Trying to delete task from List A using List B's ID
+        when(taskListRepository.findByIdAndUserHasAccess(2L, ownerUser)).thenReturn(Optional.of(listB));
+        when(taskItemRepository.findById(100L)).thenReturn(Optional.of(taskFromListA));
+
+        // Act & Assert
+        AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class,
+                () -> taskItemService.deleteTask(2L, 100L, ownerUser));
+        assertThat(exception.getMessage()).contains("Task does not belong to the specified list!");
+
+        // Verify
+        verify(taskListRepository).findByIdAndUserHasAccess(2L, ownerUser);
+        verify(taskItemRepository).findById(100L);
+        verify(taskItemRepository, never()).deleteById(any());
+    }
 }
