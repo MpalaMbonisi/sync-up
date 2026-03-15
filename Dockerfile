@@ -12,8 +12,10 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # --- Stage 2: Create the final, lightweight image ---
-# This image contains only what's necessary to run the application, reducing its size
 FROM eclipse-temurin:21-jre-alpine
+
+# Upgrade Alpine packages to patch OS-level CVEs
+RUN apk upgrade --no-cache
 
 COPY --from=build /app/target/*.jar /app/app.jar
 
