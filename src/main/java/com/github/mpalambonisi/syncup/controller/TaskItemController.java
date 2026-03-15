@@ -16,38 +16,39 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/list")
 public class TaskItemController {
 
     private final TaskItemServiceImpl taskItemService;
 
-    @GetMapping("/list/{listId}/task/{taskId}")
+    @GetMapping("/{listId}/task/{taskId}")
     public ResponseEntity<TaskItemResponseDTO> getTaskById(@PathVariable Long listId, @PathVariable Long taskId, @AuthenticationPrincipal User currentUser){
         TaskItem taskItem = taskItemService.getTaskItemById(listId, taskId, currentUser);
         return ResponseEntity.ok(convertToResponseDTO(taskItem));
     }
 
-    @PostMapping("/list/{listId}/task/create")
+    @PostMapping("/{listId}/task/create")
     public ResponseEntity<TaskItemResponseDTO> createTask(@PathVariable Long listId, @Valid @RequestBody TaskItemCreateDTO dto,
                                                  @AuthenticationPrincipal User currentUser){
         TaskItem taskItem = taskItemService.saveTask(listId, dto, currentUser);
         return new ResponseEntity<>(convertToResponseDTO(taskItem), HttpStatus.CREATED);
     }
 
-    @PatchMapping("/list/{listId}/task/{taskId}/status")
+    @PatchMapping("/{listId}/task/{taskId}/status")
     public ResponseEntity<TaskItemResponseDTO> updateTaskStatus(@PathVariable Long listId, @PathVariable Long taskId,
                                                        @Valid @RequestBody TaskItemStatusDTO dto, @AuthenticationPrincipal User currentUser){
         TaskItem taskItem = taskItemService.updateTaskItemStatus(listId, taskId, dto, currentUser);
         return ResponseEntity.ok(convertToResponseDTO(taskItem));
     }
 
-    @PatchMapping("/list/{listId}/task/{taskId}/description")
+    @PatchMapping("/{listId}/task/{taskId}/description")
     public ResponseEntity<TaskItemResponseDTO> updateTaskDescription(@PathVariable Long listId, @PathVariable Long taskId,
                                                                      @Valid @RequestBody TaskItemDescriptionDTO dto, @AuthenticationPrincipal User currentUser){
         TaskItem taskItem = taskItemService.updateTaskItemDescription(listId, taskId, dto, currentUser);
         return ResponseEntity.ok(convertToResponseDTO(taskItem));
     }
 
-    @DeleteMapping("/list/{listId}/task/{taskId}")
+    @DeleteMapping("/{listId}/task/{taskId}")
     public ResponseEntity<HttpStatus> deleteTask(@PathVariable Long listId, @PathVariable Long taskId,
                                                 @AuthenticationPrincipal User currentUser){
 
